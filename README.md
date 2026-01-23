@@ -2,52 +2,50 @@
 
 This is the backend API for the Assistant application.
 
-
 Follow these steps to set up the project on your local machine:
 
 1. Clone the repository:
-    ```sh
-    git clone https://github.com/OpenPecha/Assistant-Agent.git
-    ```
+   ```sh
+   git clone https://github.com/OpenPecha/Assistant-Agent.git
+   ```
 2. Navigate to the project directory:
-    ```sh
-    cd agent
-    ```
+   ```sh
+   cd agent
+   ```
 3. Install the dependencies:
-    ```sh
-    poetry install
-    ```
+   ```sh
+   poetry install
+   ```
 
 ### Database Setup
 
 1. Navigate to the local setup directory:
-    ```sh
-    cd local_setup
-    ```
+   ```sh
+   cd local_setup
+   ```
 2. Start the database using Docker:
-    ```sh
-    docker-compose up -d
-    ```
+   ```sh
+   docker-compose up -d
+   ```
 3. Apply database migrations:
-    ```sh
-    poetry run alembic upgrade head
-    ```
+   ```sh
+   poetry run alembic upgrade head
+   ```
 
 ### Running the Application
 
 1. Start the FastAPI development server:
-    ```sh
-    $poetry run uvicorn api.app:api --reload
-    ```
+   ```sh
+   poetry run uvicorn api.app:api --reload
+   ```
 
 The application will be available at `http://127.0.0.1:8000/`.
 
 ### API Documentation
 
-You can access the Swagger UI for the API documentation at `http://127.0.0.1:8000/docs`.  ```sh
+You can access the Swagger UI for the API documentation at `http://127.0.0.1:8000/docs`. `sh
     poetry install
-    ```
-
+    `
 
     ### Alembic Commands
 
