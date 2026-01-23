@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from api.Assistant.assistant_model import Assistant
 from typing import List, Tuple
 from uuid import UUID
@@ -37,4 +38,25 @@ def delete_assistant_repository(db: Session, assistant_id: UUID):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=ErrorConstants.FAILED_TO_DELETE_ASSISTANT
+        )
+
+def update_assistant_repository(db: Session, assistant: Assistant) -> Assistant:
+    try:
+        db.add(assistant)
+        db.commit()
+        db.refresh(assistant)
+        return assistant
+    except IntegrityError as e:
+        db.rollback()
+        logging.error(f"Integrity error while updating assistant: {e.orig}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{ErrorConstants.FAILED_TO_UPDATE_ASSISTANT}: {e.orig}"
+        )
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error updating assistant: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=ErrorConstants.FAILED_TO_UPDATE_ASSISTANT
         )

@@ -34,3 +34,11 @@ class AssistantRequest(BaseModel):
     system_prompt: str
     contexts: List[ContextRequest]
     system_assistance: bool = False
+
+class UpdateAssistantRequest(BaseModel):
+    name: Optional[str] = None
+    source_type: Optional[str] = None
+    description: Optional[str] = None
+    system_prompt: Optional[str] = None
+    contexts: Optional[List[ContextRequest]] = None
+    system_assistance: Optional[bool] = None
