@@ -2,14 +2,12 @@
 
 from api.Users.user_service import validate_and_extract_user_email
 from api.db.pg_database import SessionLocal
-from api.Assistant.assistant_repository import get_all_assistants, get_assistant_by_id_repository
+from api.Assistant.assistant_repository import get_all_assistants, get_assistant_by_id_repository, delete_assistant_repository
 from api.Assistant.assistant_response_model import AssistantRequest, AssistantResponse, AssistantInfoResponse, ContextResponse
 from api.Assistant.assistant_repository import create_assistant_repository
 from typing import List
 from api.Assistant.assistant_model import Assistant, Context
 from uuid import UUID
-from fastapi import HTTPException, status
-from api.error_constant import ErrorConstants
 
 
 def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
@@ -57,8 +55,6 @@ def create_assistant_service(token: str, assistant_request: AssistantRequest):
 def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoResponse:
     with SessionLocal() as db_session:
         assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
-        if not assistant:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ErrorConstants.ASSISTANT_NOT_FOUND)
         return AssistantInfoResponse(
             id=assistant.id,
             name=assistant.name,
@@ -73,3 +69,7 @@ def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoResponse:
             created_by=assistant.created_by,
             system_assistance=assistant.system_assistance
         )
+
+def delete_assistant_service(assistant_id: UUID):
+    with SessionLocal() as db_session:
+        delete_assistant_repository(db=db_session, assistant_id=assistant_id)

@@ -2,6 +2,9 @@ from sqlalchemy.orm import Session
 from api.Assistant.assistant_model import Assistant
 from typing import List, Tuple
 from uuid import UUID
+from fastapi import HTTPException, status
+import logging
+from api.error_constant import ErrorConstants
 
 def get_all_assistants(db: Session, skip: int, limit: int) -> Tuple[List[Assistant], int]:
     db_query = db.query(Assistant)
@@ -15,4 +18,23 @@ def create_assistant_repository(db: Session, assistant: Assistant):
     db.refresh(assistant)
 
 def get_assistant_by_id_repository(db: Session, assistant_id: UUID) -> Assistant:
-    return db.query(Assistant).filter(Assistant.id == assistant_id).first()
+    assistant = db.query(Assistant).filter(Assistant.id == assistant_id).first()
+    if not assistant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorConstants.ASSISTANT_NOT_FOUND
+        )
+    return assistant
+
+def delete_assistant_repository(db: Session, assistant_id: UUID):
+    try:
+        assistant = get_assistant_by_id_repository(db, assistant_id)
+        db.delete(assistant)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error deleting assistant: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=ErrorConstants.FAILED_TO_DELETE_ASSISTANT
+        )

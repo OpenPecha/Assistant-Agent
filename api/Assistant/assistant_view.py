@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from starlette import status
 from api.Assistant.assistant_response_model import AssistantResponse, AssistantRequest, AssistantInfoResponse
 from fastapi import Query, Depends
-from api.Assistant.assistant_service import create_assistant_service, get_assistant_by_id_service, get_assistants
+from api.Assistant.assistant_service import create_assistant_service, get_assistant_by_id_service, get_assistants, delete_assistant_service
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated
 from uuid import UUID
@@ -30,3 +30,10 @@ async def get_assistant_by_id(
     authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]
 ) -> AssistantInfoResponse:
     return get_assistant_by_id_service(assistant_id=assistant_id)
+
+@assistant_router.delete("/{assistant_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_assistant(
+    assistant_id: UUID,
+    authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]
+):
+    return delete_assistant_service(assistant_id=assistant_id)
