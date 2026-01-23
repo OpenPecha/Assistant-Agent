@@ -10,3 +10,5 @@ build/
 .DS_Store
 
 .env
+local_setup/data/*
+.local_setup/data/*
