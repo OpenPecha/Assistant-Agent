@@ -1,10 +1,11 @@
 from fastapi import APIRouter
 from starlette import status
-from api.Assistant.assistant_response_model import AssistantResponse, AssistantRequest
+from api.Assistant.assistant_response_model import AssistantResponse, AssistantRequest, AssistantInfoResponse
 from fastapi import Query, Depends
-from api.Assistant.assistant_service import create_assistant_service, get_assistants
+from api.Assistant.assistant_service import create_assistant_service, get_assistant_by_id_service, get_assistants
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated
+from uuid import UUID
 
 oauth2_scheme = HTTPBearer()
 
@@ -22,3 +23,10 @@ async def get_all_assistants(
 @assistant_router.post("", status_code=status.HTTP_201_CREATED)
 async def create_assistant(assistant_request: AssistantRequest, authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]):
     return create_assistant_service(token=authentication_credential.credentials, assistant_request=assistant_request)
+
+@assistant_router.get("/{assistant_id}", status_code=status.HTTP_200_OK)
+async def get_assistant_by_id(
+    assistant_id: UUID,
+    authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]
+) -> AssistantInfoResponse:
+    return get_assistant_by_id_service(assistant_id=assistant_id)
