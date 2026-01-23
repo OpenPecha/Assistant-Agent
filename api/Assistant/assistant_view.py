@@ -6,7 +6,7 @@ from api.Assistant.assistant_service import create_assistant_service, get_assist
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated
 from uuid import UUID
-
+from api.constant import Constant
 oauth2_scheme = HTTPBearer()
 
 assistant_router=APIRouter(
@@ -22,7 +22,8 @@ async def get_all_assistants(
 
 @assistant_router.post("", status_code=status.HTTP_201_CREATED)
 async def create_assistant(assistant_request: AssistantRequest, authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]):
-    return create_assistant_service(token=authentication_credential.credentials, assistant_request=assistant_request)
+    create_assistant_service(token=authentication_credential.credentials, assistant_request=assistant_request)
+    return {"message": Constant.CREATED_ASSISTANT_MESSAGE}
 
 @assistant_router.get("/{assistant_id}", status_code=status.HTTP_200_OK)
 async def get_assistant_by_id(

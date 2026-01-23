@@ -1,16 +1,10 @@
-from jose import jwt,JWTError
+from jose import jwt, JWTError
 from api.config import get
 from typing import Dict, Any
 import requests
 
 def validate_token(token: str) -> Dict[str, Any]:
-    if get("DOMAIN_NAME") in jwt.get_unverified_claims(token=token)["iss"]:
-        return verify_auth0_token(token)
-    else:
-        return decode_backend_token(token)
-
-def decode_backend_token(token: str):
-    return jwt.decode(token, get("JWT_SECRET_KEY"), algorithms=[get("JWT_ALGORITHM")], audience=get("JWT_AUD"))
+    return verify_auth0_token(token)
 
 def get_auth0_public_key():
     jwks_url = f"https://{get('DOMAIN_NAME')}/.well-known/jwks.json"

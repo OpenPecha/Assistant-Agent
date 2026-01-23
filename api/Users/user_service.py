@@ -1,7 +1,6 @@
 from jose import JWTError
-from jose.exceptions import JWTClaimsError
+from jose.exceptions import JWTClaimsError, ExpiredSignatureError
 from api.Auth.auth_repository import validate_token
-from jwt import ExpiredSignatureError
 from fastapi import HTTPException, status
 from api.error_constant import ErrorConstants
 from api.db.pg_database import SessionLocal
@@ -16,9 +15,6 @@ def validate_and_extract_user_email(token: str) -> str:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=ErrorConstants.TOKEN_ERROR_MESSAGE)
         return email
     except ExpiredSignatureError as exception:
-        logging.debug(f"exception: {exception}")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=ErrorConstants.TOKEN_ERROR_MESSAGE)
-    except jose.ExpiredSignatureError as exception:
         logging.debug(f"exception: {exception}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=ErrorConstants.TOKEN_ERROR_MESSAGE)
     except JWTClaimsError as exception:
