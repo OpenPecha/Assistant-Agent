@@ -1,9 +1,12 @@
 
 
+from api.Users.user_service import validate_and_extract_user_email
 from api.db.pg_database import SessionLocal
 from api.Assistant.assistant_repository import get_all_assistants
-from api.Assistant.assistant_response_model import AssistantResponse, AssistantInfoResponse, ContextResponse
+from api.Assistant.assistant_response_model import AssistantRequest, AssistantResponse, AssistantInfoResponse, ContextResponse
+from api.Assistant.assistant_repository import create_assistant_repository
 from typing import List
+from api.Assistant.assistant_model import Assistant, Context
 
 
 def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
@@ -30,3 +33,20 @@ def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
             limit=limit,
             total=total
         )
+
+def create_assistant_service(token: str, assistant_request: AssistantRequest):
+    current_user_email=validate_and_extract_user_email(token=token)
+    with SessionLocal() as db_session:
+        assistant = Assistant(
+        name=assistant_request.name,
+        source_type=assistant_request.source_type,
+        description=assistant_request.description,
+        system_prompt=assistant_request.system_prompt,
+        system_assistance=assistant_request.system_assistance,
+        created_by=current_user_email,
+        contexts=[
+            Context(content=ctx.content, file_url=ctx.file_url)
+            for ctx in assistant_request.contexts
+        ]
+    )
+        create_assistant_repository(db=db_session, assistant=assistant)

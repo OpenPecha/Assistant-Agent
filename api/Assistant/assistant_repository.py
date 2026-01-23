@@ -7,3 +7,8 @@ def get_all_assistants(db: Session, skip: int, limit: int) -> Tuple[List[Assista
     total = db_query.count()
     assistants = db_query.offset(skip).limit(limit).all()
     return assistants, total
+
+def create_assistant_repository(db: Session, assistant: Assistant):
+    db.add(assistant)
+    db.commit()
+    db.refresh(assistant)
