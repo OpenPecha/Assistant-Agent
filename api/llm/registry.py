@@ -138,20 +138,5 @@ REGISTRY: dict[str, ModelSpec] = {
     ),
 }
 
-
-ALIASES: dict[str, str] = {
-    "gpt4": "gpt-4",
-    "gpt-4.0": "gpt-4",
-}
-
 def resolve_model_name(name: str) -> str:
-    key = (name or "").strip().lower()
-    if key in REGISTRY:
-        return key
-    if key in ALIASES:
-        return ALIASES[key]
-    for canonical, spec in REGISTRY.items():
-        for a in spec.aliases:
-            if key == a.strip().lower():
-                return canonical
-    return key
+    return (name or "").strip().lower()
