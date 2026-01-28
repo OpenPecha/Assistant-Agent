@@ -11,6 +11,7 @@ DEFAULT = dict(
     DHARMAMITRA_TOKEN="your-dharmamitra-token",
     DHARMAMITRA_PASSWORD="your-dharmamitra-password",
     LANGSMITH_API_KEY="your-langsmith-api-key",
+    MAX_BATCH_SIZE="50",
 )
 
 def get(key: str) -> str:
