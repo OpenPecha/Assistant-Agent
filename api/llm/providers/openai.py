@@ -5,12 +5,13 @@ from typing import Any
 from langchain_openai import ChatOpenAI
 from langchain_core.language_models import BaseChatModel
 
+from ...config import get
 from ..exceptions import ModelUnavailableError
 from ..types import ModelSpec
 
 
-def build_openai(settings: Any, model_name: str, spec: ModelSpec, **kwargs: Any) -> BaseChatModel:
-    api_key = kwargs.pop("api_key", None) or getattr(settings, "openai_api_key", None)
+def build_openai(model_name: str, spec: ModelSpec, **kwargs: Any) -> BaseChatModel:
+    api_key = kwargs.pop("api_key", None) or get("OPENAI_API_KEY")
     if not api_key:
         raise ModelUnavailableError("OPENAI_API_KEY is required for OpenAI models")
 

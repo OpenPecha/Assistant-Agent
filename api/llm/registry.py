@@ -10,7 +10,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "claude-sonnet-4-20250514": ModelSpec(
         name="claude-sonnet-4-20250514",
         provider="Anthropic",
-        required_credential="anthropic_api_key",
+        required_credential="ANTHROPIC_API_KEY",
         build=build_anthropic,
         description="Claude Sonnet 4.0 (2025-05-14)",
         capabilities=("text", "reasoning", "translation"),
@@ -20,7 +20,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "claude-3-5-haiku-20241022": ModelSpec(
         name="claude-3-5-haiku-20241022",
         provider="Anthropic",
-        required_credential="anthropic_api_key",
+        required_credential="ANTHROPIC_API_KEY",
         build=build_anthropic,
         description="Claude 3.5 Haiku (2024-10-22)",
         capabilities=("text", "translation"),
@@ -29,7 +29,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "claude-3-opus-20240229": ModelSpec(
         name="claude-3-opus-20240229",
         provider="Anthropic",
-        required_credential="anthropic_api_key",
+        required_credential="ANTHROPIC_API_KEY",
         build=build_anthropic,
         description="Claude 3 Opus (2024-02-29)",
         capabilities=("text", "reasoning", "translation"),
@@ -38,7 +38,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "claude-haiku-4-5-20251001": ModelSpec(
         name="claude-haiku-4-5-20251001",
         provider="Anthropic",
-        required_credential="anthropic_api_key",
+        required_credential="ANTHROPIC_API_KEY",
         build=build_anthropic,
         description="Claude Haiku 4.5 (2025-10-01)",
         capabilities=("text", "reasoning", "translation", "advanced-reasoning"),
@@ -47,7 +47,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "claude-sonnet-4-5-20250929": ModelSpec(
         name="claude-sonnet-4-5-20250929",
         provider="Anthropic",
-        required_credential="anthropic_api_key",
+        required_credential="ANTHROPIC_API_KEY",
         build=build_anthropic,
         description="Claude Sonnet 4.5 (2025-09-29)",
         capabilities=("text", "reasoning", "translation", "advanced-reasoning"),
@@ -56,7 +56,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "gpt-4": ModelSpec(
         name="gpt-4",
         provider="OpenAI",
-        required_credential="openai_api_key",
+        required_credential="OPENAI_API_KEY",
         build=build_openai,
         description="GPT-4",
         capabilities=("text", "reasoning", "translation"),
@@ -65,7 +65,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "gpt-4-turbo": ModelSpec(
         name="gpt-4-turbo",
         provider="OpenAI",
-        required_credential="openai_api_key",
+        required_credential="OPENAI_API_KEY",
         build=build_openai,
         description="GPT-4 Turbo",
         capabilities=("text", "reasoning", "translation"),
@@ -74,7 +74,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "gpt-3.5-turbo": ModelSpec(
         name="gpt-3.5-turbo",
         provider="OpenAI",
-        required_credential="openai_api_key",
+        required_credential="OPENAI_API_KEY",
         build=build_openai,
         description="GPT-3.5 Turbo",
         capabilities=("text", "translation"),
@@ -83,7 +83,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "gemini-2.5-pro": ModelSpec(
         name="gemini-2.5-pro",
         provider="Google",
-        required_credential="gemini_api_key",
+        required_credential="GEMINI_API_KEY",
         build=build_gemini,
         description="Gemini 2.5 Pro",
         capabilities=("text", "reasoning", "translation"),
@@ -92,7 +92,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "gemini-2.5-flash": ModelSpec(
         name="gemini-2.5-flash",
         provider="Google",
-        required_credential="gemini_api_key",
+        required_credential="GEMINI_API_KEY",
         build=build_gemini,
         description="Gemini 2.5 Flash (fast)",
         capabilities=("text", "reasoning", "translation"),
@@ -101,7 +101,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "gemini-2.5-flash-thinking": ModelSpec(
         name="gemini-2.5-flash-thinking",
         provider="Google",
-        required_credential="gemini_api_key",
+        required_credential="GEMINI_API_KEY",
         build=build_gemini,
         description="Virtual: Gemini 2.5 Flash with thinking",
         capabilities=("text", "reasoning", "translation"),
@@ -112,7 +112,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "gemini-pro-vision": ModelSpec(
         name="gemini-pro-vision",
         provider="Google",
-        required_credential="gemini_api_key",
+        required_credential="GEMINI_API_KEY",
         build=build_gemini,
         description="Gemini Pro Vision",
         capabilities=("text", "vision", "translation"),
@@ -121,7 +121,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "gemini-pro": ModelSpec(
         name="gemini-pro",
         provider="Google",
-        required_credential="gemini_api_key",
+        required_credential="GEMINI_API_KEY",
         build=build_gemini,
         description="Gemini Pro",
         capabilities=("text", "reasoning", "translation"),
@@ -130,7 +130,7 @@ REGISTRY: dict[str, ModelSpec] = {
     "dharamitra": ModelSpec(
         name="dharamitra",
         provider="Dharmamitra",
-        required_credential="dharmamitra_token",
+        required_credential="DHARMAMITRA_TOKEN",
         build=build_dharmamitra,
         description="Dharmamitra Chat Translate (mitra-base)",
         capabilities=("text", "translation"),

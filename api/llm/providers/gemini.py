@@ -5,14 +5,15 @@ from typing import Any, Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.language_models import BaseChatModel
 
+from ...config import get
 from ..exceptions import ModelUnavailableError
 from ..types import ModelSpec
 from ..wrappers.gemini_wrapper import GeminiModelWrapper
 
 
-def build_gemini(settings: Any, model_name: str, spec: ModelSpec, **kwargs: Any) -> BaseChatModel:
+def build_gemini(model_name: str, spec: ModelSpec, **kwargs: Any) -> BaseChatModel:
 
-    api_key = kwargs.pop("api_key", None) or getattr(settings, "gemini_api_key", None)
+    api_key = kwargs.pop("api_key", None) or get("GEMINI_API_KEY")
     if not api_key:
         raise ModelUnavailableError("GEMINI_API_KEY is required for Gemini models")
 

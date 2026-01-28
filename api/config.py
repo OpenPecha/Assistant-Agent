@@ -3,12 +3,17 @@ import os
 DEFAULT = dict(
     APP_NAME="Assistant Agent",
     DATABASE_URL="postgresql://admin:assistantAdmin@localhost:5434/assistant",
-    DOMAIN_NAME="yourdomain",
-    CLIENT_ID="yourclientid",
+    DOMAIN_NAME="your-domain-name",
+    CLIENT_ID="your-client-id",
+    ANTHROPIC_API_KEY="your-anthropic-api-key",
+    OPENAI_API_KEY="your-openai-api-key",
+    GEMINI_API_KEY="your-gemini-api-key",
+    DHARMAMITRA_TOKEN="your-dharmamitra-token",
+    DHARMAMITRA_PASSWORD="your-dharmamitra-password",
+    LANGSMITH_API_KEY="your-langsmith-api-key",
 )
 
 def get(key: str) -> str:
     if key in os.environ:
         return os.environ[key]
-    else:
-        return str(DEFAULT[key])
+    return str(DEFAULT.get(key, ""))

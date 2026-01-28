@@ -4,14 +4,15 @@ from typing import Any
 
 from langchain_core.language_models import BaseChatModel
 
+from ...config import get
 from ..exceptions import ModelUnavailableError
 from ..types import ModelSpec
 from ..wrappers.dharmamitra_wrapper import DharmamitraModelWrapper
 
 
-def build_dharmamitra(settings: Any, model_name: str, spec: ModelSpec, **kwargs: Any) -> BaseChatModel:
+def build_dharmamitra(model_name: str, spec: ModelSpec, **kwargs: Any) -> BaseChatModel:
 
-    token = kwargs.pop("api_key", None) or getattr(settings, "dharmamitra_token", None)
+    token = kwargs.pop("api_key", None) or get("DHARMAMITRA_TOKEN")
     if not token:
         raise ModelUnavailableError("DHARMAMITRA_TOKEN is required for 'dharamitra' model")
 

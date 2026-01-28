@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 from langchain_core.language_models import BaseChatModel
 
-from ..config import get_settings
+from ..config import get
 from .exceptions import ModelUnavailableError, UnsupportedModelError
 from .registry import REGISTRY, resolve_model_name
 from .types import ModelSpec
@@ -18,7 +18,6 @@ def _stable_cache_key(model_name: str, kwargs: Dict[str, Any]) -> str:
 class ModelRouter:
 
     def __init__(self) -> None:
-        self.settings = get_settings()
         self._cache: Dict[str, BaseChatModel] = {}
 
     def get_spec(self, model_name: str) -> ModelSpec:
@@ -55,11 +54,11 @@ class ModelRouter:
             )
 
         if "api_key" in kwargs and kwargs["api_key"]:
-            return spec.build(self.settings, model_name=spec.name, spec=spec, **kwargs)
+            return spec.build(model_name=spec.name, spec=spec, **kwargs)
 
         cache_key = _stable_cache_key(spec.name, kwargs)
         if cache_key not in self._cache:
-            self._cache[cache_key] = spec.build(self.settings, model_name=spec.name, spec=spec, **kwargs)
+            self._cache[cache_key] = spec.build(model_name=spec.name, spec=spec, **kwargs)
         return self._cache[cache_key]
 
     def _has_credential(self, spec: ModelSpec, kwargs: Optional[Dict[str, Any]] = None) -> bool:
@@ -68,7 +67,7 @@ class ModelRouter:
             return True
         if not spec.required_credential:
             return True
-        return bool(getattr(self.settings, spec.required_credential, None))
+        return bool(get(spec.required_credential))
 
 
 _model_router = ModelRouter()
