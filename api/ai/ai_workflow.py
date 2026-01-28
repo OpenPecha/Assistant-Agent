@@ -14,7 +14,6 @@ from langchain_core.messages import HumanMessage
 
 from api.ai.translation_types import (
     TranslationWorkflowState,
-    TranslationRequest,
     TranslationBatch,
     TranslationResult,
     BatchResult,
@@ -23,10 +22,12 @@ from api.ai.translation_types import (
 from api.llm.router import get_model_router
 from api.ai.prompts import get_translation_prompt, GLOSSARY_EXTRACTION_POST_TRANSLATION_PROMPT
 from api.ai.utils import clean_translation_text
+from api.ai.ai_response_model import WorkflowRequest
 from api.ai.cache import get_cache
 from api import config
 
 DEFAULT_MAX_BATCH_SIZE = 50
+DEFAULT_MIN_BATCH_SIZE = 1
 
 
 def initialize_workflow(state: TranslationWorkflowState) -> TranslationWorkflowState:
@@ -42,9 +43,9 @@ def initialize_workflow(state: TranslationWorkflowState) -> TranslationWorkflowS
     
     # Create batches
     batches = []
-    texts = request.texts
+    texts = request.text
     max_batch_size = int(config.get("MAX_BATCH_SIZE") or DEFAULT_MAX_BATCH_SIZE)
-    batch_size = min(request.batch_size, max_batch_size)
+    batch_size = min(int(config.get("MIN_BATCH_SIZE") or DEFAULT_MIN_BATCH_SIZE), max_batch_size)
     
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i:i + batch_size]
@@ -52,10 +53,9 @@ def initialize_workflow(state: TranslationWorkflowState) -> TranslationWorkflowS
             batch_id=str(uuid.uuid4()),
             texts=batch_texts,
             target_language=request.target_language,
-            text_type=request.text_type,
-            model_name=request.model_name,
-            model_params=request.model_params,
-            user_rules=request.user_rules
+            text_type=request.assistant_source_type,
+            model_name=request.model,
+            user_rules=request.assistant_system_prompt
         )
         batches.append(batch)
     
@@ -71,8 +71,7 @@ def initialize_workflow(state: TranslationWorkflowState) -> TranslationWorkflowS
         "workflow_status": "running",
         "errors": [],
         "retry_count": 0,
-        "model_name": request.model_name,
-        "model_params": request.model_params,
+        "model_name": request.model,
         "custom_steps": {},
         "metadata": {
             "initialized_at": datetime.now().isoformat(),
@@ -346,7 +345,7 @@ def create_translation_workflow() -> StateGraph:
 
 
 # Convenience function for easy workflow execution
-async def run_translation_workflow(request: TranslationRequest) -> TranslationWorkflowState:
+async def run_translation_workflow(request: WorkflowRequest) -> TranslationWorkflowState:
     """
     Execute the translation workflow with the given request.
     
@@ -372,8 +371,7 @@ async def run_translation_workflow(request: TranslationRequest) -> TranslationWo
         "workflow_status": "initializing",
         "errors": [],
         "retry_count": 0,
-        "model_name": request.model_name,
-        "model_params": request.model_params,
+        "model_name": request.model,
         "custom_steps": {},
         "metadata": {}
     }
