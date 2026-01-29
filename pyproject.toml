@@ -29,6 +29,7 @@ langchain-openai = "^0.2.14"
 langchain-google-genai = "^2.0.8"
 langgraph = "^0.2.59"
 httpx = "^0.28.1"
+rich = "^14.3.1"
 
 [tool.poetry.scripts]
 start = "uvicorn:main"

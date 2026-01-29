@@ -8,5 +8,5 @@ class WorkflowRequest(BaseModel):
     assistant_system_prompt: str
     contexts: List[ContextRequest]
     target_language: str
-    text: str
+    text: List[str]
     model: str

@@ -20,4 +20,4 @@ async def get_stream_response(
     model:str,
     authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]
 ):
-    return get_stream_response_service(assistant_id=assistant_id, target_language=target_language, prompt=prompt, model=model)
+    return await get_stream_response_service(assistant_id=assistant_id, target_language=target_language, prompt=prompt, model=model)
