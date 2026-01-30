@@ -11,6 +11,9 @@ DEFAULT = dict(
     DHARMAMITRA_TOKEN="your-dharmamitra-token",
     DHARMAMITRA_PASSWORD="your-dharmamitra-password",
     LANGSMITH_API_KEY="your-langsmith-api-key",
+    LANGSMITH_ENDPOINT="your-langsmith-endpoint",
+    LANGSMITH_PROJECT="your-langsmith-project",
+    LANGSMITH_TRACING="true",
     MAX_BATCH_SIZE="50",
     MIN_BATCH_SIZE="1",
 )
