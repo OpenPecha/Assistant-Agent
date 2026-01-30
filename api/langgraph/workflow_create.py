@@ -4,9 +4,9 @@ from api.ai.translation_types import (
     TranslationWorkflowState as WorkflowState
 )
 
-from api.lang_graph.nodes.node_initialize import initialize_workflow
-from api.lang_graph.nodes.node_process import process_batch
-from api.lang_graph.nodes.node_finalize import finalize_workflow
+from api.langgraph.nodes.node_initialize import initialize_workflow
+from api.langgraph.nodes.node_process import process_batch
+from api.langgraph.nodes.node_finalize import finalize_workflow
 
 def check_completion(state: WorkflowState) -> str:
     current_index = state["current_batch_index"]
