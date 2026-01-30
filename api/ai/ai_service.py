@@ -1,6 +1,6 @@
 from api.Assistant.assistant_repository import get_assistant_by_id_repository
 from api.Assistant.assistant_response_model import ContextRequest
-from api.ai.ai_workflow import run_translation_workflow
+from api.ai.ai_workflow import run_workflow
 from api.ai.ai_response_model import WorkflowRequest
 from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
@@ -27,5 +27,5 @@ async def get_stream_response_service(assistant_id, target_language, prompt, mod
         text=[prompt],
         model=model
     )
-    workflow_response = await run_translation_workflow(workflow_request)
+    workflow_response = await run_workflow(workflow_request)
     print(workflow_response)

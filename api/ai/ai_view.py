@@ -16,9 +16,9 @@ ai_router=APIRouter(
 @ai_router.post("", status_code=status.HTTP_200_OK)
 async def get_stream_response(
     payload: StreamRequest, 
-    authentication_credential: Annotated[
-        HTTPAuthorizationCredentials, Depends(oauth2_scheme)
-    ],
+    # authentication_credential: Annotated[
+    #     HTTPAuthorizationCredentials, Depends(oauth2_scheme)
+    # ],
 ):
     return await get_stream_response_service(
         assistant_id=payload.assistant_id,
