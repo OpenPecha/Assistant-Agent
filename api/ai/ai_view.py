@@ -1,3 +1,4 @@
+from api.ai.ai_response_model import StreamRequest
 from api.ai.ai_service import get_stream_response_service
 from fastapi import APIRouter
 from starlette import status
@@ -12,12 +13,16 @@ ai_router=APIRouter(
     tags=["ai"]
 )
 
-@ai_router.get("/", status_code=status.HTTP_200_OK)
+@ai_router.post("", status_code=status.HTTP_200_OK)
 async def get_stream_response(
-    assistant_id: UUID,
-    target_language:str,
-    prompt:str,
-    model:str,
-    authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]
+    payload: StreamRequest, 
+    authentication_credential: Annotated[
+        HTTPAuthorizationCredentials, Depends(oauth2_scheme)
+    ],
 ):
-    return await get_stream_response_service(assistant_id=assistant_id, target_language=target_language, prompt=prompt, model=model)
+    return await get_stream_response_service(
+        assistant_id=payload.assistant_id,
+        target_language=payload.target_language,
+        prompt=payload.prompt,
+        model=payload.model,
+    )
