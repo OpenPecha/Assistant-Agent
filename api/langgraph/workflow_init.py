@@ -1,7 +1,5 @@
 from api.ai.ai_response_model import WorkflowRequest
-from api.ai.translation_types import (
-    TranslationWorkflowState as WorkflowState
-)
+from api.langgraph.workflow_type import  WorkflowState
 from api.langgraph.workflow_create import create_workflow
 
 async def run_workflow(request: WorkflowRequest) -> WorkflowState:

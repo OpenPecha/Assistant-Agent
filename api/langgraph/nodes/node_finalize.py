@@ -1,9 +1,7 @@
 import time
 from datetime import datetime
 
-from api.ai.translation_types import (
-    TranslationWorkflowState as WorkflowState,
-)
+from api.langgraph.workflow_type import WorkflowState
 
 def finalize_workflow(state: WorkflowState) -> WorkflowState:
     total_time = time.time() - state["workflow_start_time"]

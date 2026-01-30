@@ -2,10 +2,7 @@ import time
 import uuid
 from datetime import datetime
 
-from api.ai.translation_types import (
-    TranslationWorkflowState as WorkflowState,
-    TranslationBatch as WorkBatch,
-)
+from api.langgraph.workflow_type import WorkflowState,Batch
 from api import config
 
 DEFAULT_MAX_BATCH_SIZE = 50
@@ -21,7 +18,7 @@ def initialize_workflow(state: WorkflowState) -> WorkflowState:
 
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i : i + batch_size]
-        batch = WorkBatch(
+        batch = Batch(
             batch_id=str(uuid.uuid4()),
             texts=batch_texts,
             target_language=request.target_language,

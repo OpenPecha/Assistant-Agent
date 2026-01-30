@@ -1,8 +1,7 @@
 """
 Simple in-memory cache for translation and glossary results.
 """
-from typing import Dict, Any, Optional, Tuple, List
-from api.ai.translation_types import GlossaryTerm
+from typing import Dict, Optional
 
 class SimpleCache:
     """A simple singleton-like class for in-memory caching."""
@@ -13,8 +12,6 @@ class SimpleCache:
             cls._instance = super(SimpleCache, cls).__new__(cls)
             # Cache for [translation_text]
             cls._instance.translation_cache: Dict[str, str] = {}
-            # Cache for [List[GlossaryTerm]]
-            cls._instance.glossary_cache: Dict[str, List[GlossaryTerm]] = {}
         return cls._instance
 
     def get_translation_cache_key(self, source_text: str, target_language: str, text_type: str, model_name: str, user_rules: Optional[str]) -> str:
@@ -31,12 +28,6 @@ class SimpleCache:
 
     def set_translation(self, key: str, translation: str):
         self.translation_cache[key] = translation
-
-    def get_glossary(self, key: str) -> Optional[List[GlossaryTerm]]:
-        return self.glossary_cache.get(key)
-
-    def set_glossary(self, key: str, glossary_terms: List[GlossaryTerm]):
-        self.glossary_cache[key] = glossary_terms
 
     def clear_all(self):
         """Clears both the translation and glossary caches."""

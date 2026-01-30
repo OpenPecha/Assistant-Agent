@@ -1,9 +1,6 @@
 from langgraph.graph import StateGraph, END
 
-from api.ai.translation_types import (
-    TranslationWorkflowState as WorkflowState
-)
-
+from api.langgraph.workflow_type import  WorkflowState
 from api.langgraph.nodes.node_initialize import initialize_workflow
 from api.langgraph.nodes.node_process import process_batch
 from api.langgraph.nodes.node_finalize import finalize_workflow

@@ -58,24 +58,9 @@ Texts to translate:
 
 
 def get_context_prompt(context: str) -> str:
-    """
-    Generate a context prompt that provides important background information for translation.
-    
-    This context is crucial for maintaining consistency and accuracy in translations,
-    especially for Tibetan Buddhist texts where terminology and concepts must be
-    preserved correctly across related passages.
-    
-    Args:
-        context: Background information, terminology, or previous translations
-                that should inform the current translation
-    
-    Returns:
-        Formatted context prompt string that emphasizes the importance of
-        using the provided context for consistent translation
-    """
+
     return f"""IMPORTANT CONTEXT INFORMATION:
 {context}
-
 CRITICAL INSTRUCTION: This context information is essential for your translation. You must:
 - Use this context to ensure terminological consistency
 - Maintain coherence with any previously established translations
@@ -92,27 +77,12 @@ def get_translation_prompt(
     batch_texts: list = None,
     user_rules: str = None
 ) -> str:
-    """
-    Generate a translation prompt for Tibetan Buddhist texts.
-    
-    Args:
-        source_text: The text to translate (or first text if batch)
-        target_language: Target language for translation
-        text_type: Type of Buddhist text (sutra, commentary, etc.)
-        batch_texts: List of texts for batch processing
-        user_rules: Optional custom rules/instructions from user
-        context: Optional context for translation
-    
-    Returns:
-        Formatted prompt string
-    """
-    # Create user rules section
+
     user_rules_section = ""
     if user_rules and user_rules.strip():
         user_rules_section = f"ADDITIONAL USER RULES:\n{user_rules.strip()}\n"
     
     if batch_texts:
-        # Format texts for batch processing
         formatted_texts = ""
         for i, text in enumerate(batch_texts, 1):
             formatted_texts += f"\nTEXT {i}:\n{text}\n"

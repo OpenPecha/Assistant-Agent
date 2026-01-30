@@ -1,12 +1,7 @@
 import time
 from datetime import datetime
 from langchain_core.messages import HumanMessage
-
-from api.ai.translation_types import (
-    TranslationWorkflowState as WorkflowState,
-    TranslationResult as WorkResult,
-    BatchResult,
-)
+from api.langgraph.workflow_type import WorkflowState,Result,BatchResult
 from api.llm.router import get_model_router
 from api.ai.prompts import get_translation_prompt
 from api.ai.utils import clean_translation_text
@@ -55,7 +50,7 @@ def process_batch(state: WorkflowState) -> WorkflowState:
                 output_text = clean_translation_text(response.content)
                 cache.set_translation(cache_key, output_text)
 
-            result = WorkResult(
+            result = Result(
                 original_text=input_text,
                 translated_text=output_text,
                 metadata={
