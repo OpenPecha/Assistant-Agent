@@ -1,6 +1,6 @@
 from api.Assistant.assistant_repository import get_assistant_by_id_repository
 from api.Assistant.assistant_response_model import ContextRequest
-from api.ai.ai_workflow import run_workflow
+from api.lang_graph.workflow_init import run_workflow
 from api.ai.ai_response_model import WorkflowRequest
 from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
