@@ -5,7 +5,6 @@ from starlette import status
 from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated
-from uuid import UUID
 oauth2_scheme = HTTPBearer()
 
 ai_router=APIRouter(

@@ -5,16 +5,15 @@ from datetime import datetime
 from api.langgraph.workflow_type import WorkflowState,Batch
 from api import config
 
-DEFAULT_MAX_BATCH_SIZE = 50
-DEFAULT_MIN_BATCH_SIZE = 1
+DEFAULT_MAX_BATCH_SIZE = 2
 
 def initialize_workflow(state: WorkflowState) -> WorkflowState:
     request = state["original_request"]
 
     batches = []
     texts = request.text
-    max_batch_size = int(config.get("MAX_BATCH_SIZE") or DEFAULT_MAX_BATCH_SIZE)
-    batch_size = min(int(config.get("MIN_BATCH_SIZE") or DEFAULT_MIN_BATCH_SIZE), max_batch_size)
+    init_size = int(config.get("MAX_BATCH_SIZE") or DEFAULT_MAX_BATCH_SIZE)
+    batch_size = init_size
 
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i : i + batch_size]
