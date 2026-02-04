@@ -5,7 +5,6 @@ from api.langgraph.workflow_type import WorkflowState,Result,BatchResult
 from api.llm.router import get_model_router
 from api.ai.prompts import get_translation_prompt
 from api.ai.utils import clean_translation_text
-from api.ai.cache import get_cache
 
 def process_batch(state: WorkflowState) -> WorkflowState:
     current_index = state["current_batch_index"]
@@ -22,33 +21,18 @@ def process_batch(state: WorkflowState) -> WorkflowState:
         model_router = get_model_router()
         model = model_router.get_model(current_batch.model_name)
 
-        cache = get_cache()
         item_results = []
 
         for input_text in current_batch.texts:
-            # Cache wrapper stays translation-based internally, but naming is generic here
-            cache_key = cache.get_translation_cache_key(
-                input_text,
-                current_batch.target_language,
-                current_batch.text_type,
-                current_batch.model_name,
-                current_batch.user_rules,
+            prompt = get_translation_prompt(
+                source_text=input_text,
+                target_language=current_batch.target_language,
+                text_type=current_batch.text_type,
+                user_rules=current_batch.user_rules,
             )
-            cached_output = cache.get_translation(cache_key)
-
-            if cached_output:
-                output_text = cached_output
-            else:
-                prompt = get_translation_prompt(
-                    source_text=input_text,
-                    target_language=current_batch.target_language,
-                    text_type=current_batch.text_type,
-                    user_rules=current_batch.user_rules,
-                )
-                message = HumanMessage(content=prompt)
-                response = model.invoke([message])
-                output_text = clean_translation_text(response.content)
-                cache.set_translation(cache_key, output_text)
+            message = HumanMessage(content=prompt)
+            response = model.invoke([message])
+            output_text = clean_translation_text(response.content)
 
             result = Result(
                 original_text=input_text,
