@@ -6,7 +6,7 @@ from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
 from fastapi import HTTPException
 
-async def get_stream_response_service(assistant_id, target_language, prompt, model):
+async def get_translation_response_service(assistant_id, target_language, prompt, model):
     model_router = get_model_router()
     if not model_router.validate_model_availability(model):
         available_models = model_router.available_models()
