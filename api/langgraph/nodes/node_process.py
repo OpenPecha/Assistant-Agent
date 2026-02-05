@@ -1,12 +1,13 @@
 import time
 from datetime import datetime
 from langchain_core.messages import HumanMessage
-from api.langgraph.workflow_type import WorkflowState,Result,BatchResult
+from api.langgraph.workflow_type import WorkflowState, Result, BatchResult
 from api.llm.router import get_model_router
 from api.ai.prompts import get_specialized_prompt
 from api.ai.utils import clean_translation_text
 
-def process_batch(state: WorkflowState) -> WorkflowState:
+
+async def process_batch(state: WorkflowState) -> WorkflowState:
     current_index = state["current_batch_index"]
     batches = state["batches"]
 
@@ -32,7 +33,7 @@ def process_batch(state: WorkflowState) -> WorkflowState:
                 contexts=current_batch.contexts,
             )
             message = HumanMessage(content=prompt)
-            response = model.invoke([message])
+            response = await model.ainvoke([message])
             output_text = clean_translation_text(response.content)
 
             result = Result(

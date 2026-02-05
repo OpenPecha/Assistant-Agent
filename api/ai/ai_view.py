@@ -10,10 +10,17 @@ from api.error_constant import ErrorConstants, ResponseError
 
 oauth2_scheme = HTTPBearer()
 
-ai_router=APIRouter(
+ai_router = APIRouter(
     prefix="/ai",
     tags=["ai"]
 )
+
+SSE_HEADERS = {
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no"
+}
+
 
 @ai_router.post("", status_code=status.HTTP_200_OK)
 async def get_translation_response(
@@ -24,7 +31,13 @@ async def get_translation_response(
 ):
     max_query_length = get("MAX_QUERY_LENGTH")
     if len(payload.prompt) > int(max_query_length):
-        raise HTTPException(status_code=400, detail=ResponseError(error=ErrorConstants.BAD_REQUEST, message=ErrorConstants.MAX_QUERY_LENGTH_ERROR).model_dump())
+        raise HTTPException(
+            status_code=400, 
+            detail=ResponseError(
+                error=ErrorConstants.BAD_REQUEST, 
+                message=ErrorConstants.MAX_QUERY_LENGTH_ERROR
+            ).model_dump()
+        )
 
     return await get_translation_response_service(
         assistant_id=payload.assistant_id,
@@ -43,7 +56,13 @@ async def get_translation_response_stream(
 ):
     max_query_length = get("MAX_QUERY_LENGTH")
     if len(payload.prompt) > int(max_query_length):
-        raise HTTPException(status_code=400, detail=ResponseError(error=ErrorConstants.BAD_REQUEST, message=ErrorConstants.MAX_QUERY_LENGTH_ERROR).model_dump())
+        raise HTTPException(
+            status_code=400, 
+            detail=ResponseError(
+                error=ErrorConstants.BAD_REQUEST, 
+                message=ErrorConstants.MAX_QUERY_LENGTH_ERROR
+            ).model_dump()
+        )
 
     return StreamingResponse(
         get_translation_response_stream_service(
@@ -52,5 +71,6 @@ async def get_translation_response_stream(
             prompt=payload.prompt,
             model=payload.model,
         ),
-        media_type="text/event-stream"
+        media_type="text/event-stream",
+        headers=SSE_HEADERS
     )

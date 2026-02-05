@@ -19,6 +19,7 @@ async def run_workflow(request: WorkflowRequest) -> WorkflowState:
         "errors": [],
         "retry_count": 0,
         "model_name": request.model,
+        "model_params": {},
         "custom_steps": {},
         "metadata": {},
     }
