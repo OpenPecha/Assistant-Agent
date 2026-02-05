@@ -15,6 +15,10 @@ def initialize_workflow(state: WorkflowState) -> WorkflowState:
     init_size = int(config.get("MAX_BATCH_SIZE") or DEFAULT_MAX_BATCH_SIZE)
     batch_size = init_size
 
+    combined_contexts = "\n".join(
+        ctx.content for ctx in request.contexts if ctx.content
+    ) if request.contexts else None
+
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i : i + batch_size]
         batch = Batch(
@@ -24,6 +28,7 @@ def initialize_workflow(state: WorkflowState) -> WorkflowState:
             text_type=request.assistant_source_type,
             model_name=request.model,
             user_rules=request.assistant_system_prompt,
+            contexts=combined_contexts,
         )
         batches.append(batch)
 

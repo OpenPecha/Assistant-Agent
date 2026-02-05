@@ -12,6 +12,7 @@ class Batch(BaseModel):
     text_type: str = Field(..., description="Type of Buddhist text")
     model_name: str = Field(..., description="Model to use")
     user_rules: Optional[str] = Field(None, description="Optional custom translation rules")
+    contexts: Optional[str] = Field(None, description="Additional context for processing")
 
 
 class Result(BaseModel):

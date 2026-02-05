@@ -29,6 +29,7 @@ def process_batch(state: WorkflowState) -> WorkflowState:
                 target_language=current_batch.target_language,
                 text_type=current_batch.text_type,
                 user_rules=current_batch.user_rules,
+                contexts=current_batch.contexts,
             )
             message = HumanMessage(content=prompt)
             response = model.invoke([message])
