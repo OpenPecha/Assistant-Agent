@@ -3,7 +3,7 @@ from datetime import datetime
 from langchain_core.messages import HumanMessage
 from api.langgraph.workflow_type import WorkflowState,Result,BatchResult
 from api.llm.router import get_model_router
-from api.ai.prompts import get_translation_prompt
+from api.ai.prompts import get_specialized_prompt
 from api.ai.utils import clean_translation_text
 
 def process_batch(state: WorkflowState) -> WorkflowState:
@@ -24,7 +24,7 @@ def process_batch(state: WorkflowState) -> WorkflowState:
         item_results = []
 
         for input_text in current_batch.texts:
-            prompt = get_translation_prompt(
+            prompt = get_specialized_prompt(
                 source_text=input_text,
                 target_language=current_batch.target_language,
                 text_type=current_batch.text_type,
