@@ -8,14 +8,14 @@ class Batch(BaseModel):
     """A batch of texts for processing."""
     batch_id: str = Field(..., description="Unique identifier for the batch")
     texts: List[str] = Field(..., description="Texts in this batch")
-    target_language: str = Field(..., description="Target language")
+    target_language: Optional[str] = Field(None, description="Target language for translation tasks")
     text_type: str = Field(..., description="Type of Buddhist text")
     model_name: str = Field(..., description="Model to use")
     user_rules: Optional[str] = Field(None, description="Optional custom translation rules")
 
 
 class Result(BaseModel):
-    """Result for a single text translation."""
+    """Result for a single text processing (translation or Q&A response)."""
     original_text: str
     translated_text: str
     metadata: Dict[str, Any]

@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Optional
 from api.Assistant.assistant_response_model import ContextRequest
 from pydantic import BaseModel, Field
 from uuid import UUID
@@ -8,17 +8,16 @@ class WorkflowRequest(BaseModel):
     assistant_source_type: str
     assistant_system_prompt: str
     contexts: List[ContextRequest]
-    target_language: str
+    target_language: Optional[str] = None
     text: List[str]
     model: str
 
 
 class StreamRequest(BaseModel):
     assistant_id: UUID
-    target_language: str = Field(min_length=2)
+    target_language: Optional[str] = None
     prompt: List[str] = Field(min_length=1)
     model: str = Field(min_length=1)
-
 
 class ResultMetadata(BaseModel):
     batch_id: str
