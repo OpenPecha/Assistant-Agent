@@ -30,7 +30,8 @@ async def get_translation_response(
     ],
 ):
     max_query_length = get("MAX_QUERY_LENGTH")
-    if len(payload.prompt) > int(max_query_length):
+    total_prompt_length = sum(len(p) for p in payload.prompt)
+    if total_prompt_length > int(max_query_length):
         raise HTTPException(
             status_code=400, 
             detail=ResponseError(
@@ -55,7 +56,8 @@ async def get_translation_response_stream(
     ],
 ):
     max_query_length = get("MAX_QUERY_LENGTH")
-    if len(payload.prompt) > int(max_query_length):
+    total_prompt_length = sum(len(p) for p in payload.prompt)
+    if total_prompt_length > int(max_query_length):
         raise HTTPException(
             status_code=400, 
             detail=ResponseError(

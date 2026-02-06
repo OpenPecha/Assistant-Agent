@@ -1,0 +1,985 @@
+from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
+
+ui_router = APIRouter(tags=["ui"])
+
+@ui_router.get("/", response_class=HTMLResponse)
+async def serve_ui():
+    return HTML_CONTENT
+
+HTML_CONTENT = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Assistant Agent</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#1a1a2e;
+  --bg-secondary:#16213e;
+  --bg-tertiary:#0f3460;
+  --bg-card:#1e2a4a;
+  --bg-input:#0d1b36;
+  --bg-hover:#253a5e;
+  --text-primary:#e8e8e8;
+  --text-secondary:#a0aec0;
+  --text-muted:#6b7fa3;
+  --accent:#e94560;
+  --accent-hover:#d63851;
+  --accent-green:#38b2ac;
+  --accent-blue:#4299e1;
+  --accent-purple:#9f7aea;
+  --border:#2d3a5c;
+  --shadow:0 4px 20px rgba(0,0,0,0.3);
+  --radius:12px;
+  --radius-sm:8px;
+  --radius-xs:6px;
+  --transition:all 0.2s ease;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow:hidden}
+button{cursor:pointer;border:none;font-family:inherit;font-size:inherit}
+input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:none}
+
+.app{display:flex;height:100vh;width:100vw}
+
+/* Sidebar */
+.sidebar{
+  width:320px;min-width:320px;
+  background:var(--bg-secondary);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.sidebar-header{
+  padding:20px;border-bottom:1px solid var(--border);
+}
+.sidebar-header h1{
+  font-size:18px;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),var(--accent-purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:16px;
+}
+.token-section{display:flex;flex-direction:column;gap:8px}
+.token-section label{font-size:12px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.token-input{
+  display:flex;gap:8px;
+}
+.token-input input{
+  flex:1;padding:8px 12px;
+  background:var(--bg-input);color:var(--text-primary);
+  border:1px solid var(--border);border-radius:var(--radius-xs);
+  font-size:13px;
+}
+.token-input input:focus{border-color:var(--accent-blue)}
+.btn-sm{
+  padding:6px 14px;border-radius:var(--radius-xs);
+  font-size:12px;font-weight:600;
+  transition:var(--transition);
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-outline{background:transparent;color:var(--accent-blue);border:1px solid var(--accent-blue)}
+.btn-outline:hover{background:var(--accent-blue);color:#fff}
+.btn-danger{background:#e53e3e;color:#fff}
+.btn-danger:hover{background:#c53030}
+.btn-success{background:var(--accent-green);color:#fff}
+.btn-success:hover{background:#2c9e94}
+
+.new-assistant-btn{
+  margin:16px 20px;padding:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-purple));
+  color:#fff;border-radius:var(--radius-sm);
+  font-weight:600;font-size:14px;
+  transition:var(--transition);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.new-assistant-btn:hover{opacity:0.9;transform:translateY(-1px)}
+
+.assistant-list{
+  flex:1;overflow-y:auto;padding:8px;
+}
+.assistant-list::-webkit-scrollbar{width:4px}
+.assistant-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.assistant-item{
+  padding:14px 16px;margin-bottom:4px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;transition:var(--transition);
+  border:1px solid transparent;
+}
+.assistant-item:hover{background:var(--bg-hover);border-color:var(--border)}
+.assistant-item.active{background:var(--bg-tertiary);border-color:var(--accent-blue)}
+.assistant-item h3{font-size:14px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.assistant-item p{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.assistant-item .badge{
+  display:inline-block;padding:2px 8px;border-radius:10px;
+  font-size:10px;font-weight:600;margin-top:6px;
+  background:rgba(66,153,225,0.15);color:var(--accent-blue);
+}
+
+.sidebar-footer{
+  padding:12px 20px;border-top:1px solid var(--border);
+  font-size:11px;color:var(--text-muted);text-align:center;
+}
+
+/* Main Area */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Empty State */
+.empty-state{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;color:var(--text-muted);
+}
+.empty-state svg{width:80px;height:80px;opacity:0.3}
+.empty-state h2{font-size:22px;font-weight:600;color:var(--text-secondary)}
+.empty-state p{font-size:14px;max-width:400px;text-align:center;line-height:1.6}
+
+/* Assistant Detail Header */
+.detail-header{
+  padding:16px 24px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg-secondary);
+}
+.detail-header-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.detail-header-left h2{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.detail-header-left .source-badge{
+  padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;
+  background:rgba(159,122,234,0.15);color:var(--accent-purple);flex-shrink:0;
+}
+.detail-actions{display:flex;gap:8px}
+
+/* Chat Area */
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.messages{
+  flex:1;overflow-y:auto;padding:24px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.messages::-webkit-scrollbar{width:6px}
+.messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.message{
+  max-width:85%;padding:16px 20px;
+  border-radius:var(--radius);
+  font-size:14px;line-height:1.7;
+  animation:fadeIn 0.3s ease;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.message.user{
+  align-self:flex-end;
+  background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));
+  color:#fff;border-bottom-right-radius:4px;
+}
+.message.assistant{
+  align-self:flex-start;
+  background:var(--bg-card);
+  border:1px solid var(--border);border-bottom-left-radius:4px;
+}
+.message pre{
+  background:var(--bg-input);padding:12px;border-radius:var(--radius-xs);
+  overflow-x:auto;margin:8px 0;font-size:13px;
+}
+.message .meta{font-size:11px;color:var(--text-muted);margin-top:8px}
+
+.chat-welcome{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;color:var(--text-muted);
+}
+.chat-welcome h3{font-size:20px;color:var(--text-secondary)}
+.chat-welcome p{font-size:13px;max-width:500px;text-align:center;line-height:1.6}
+
+/* Input Area */
+.input-area{
+  padding:16px 24px;border-top:1px solid var(--border);
+  background:var(--bg-secondary);
+}
+.input-controls{
+  display:flex;gap:10px;margin-bottom:12px;align-items:center;
+}
+.input-controls select,.input-controls input{
+  padding:8px 12px;
+  background:var(--bg-input);color:var(--text-primary);
+  border:1px solid var(--border);border-radius:var(--radius-xs);
+  font-size:13px;
+}
+.input-controls select{min-width:180px}
+.input-controls select:focus,.input-controls input:focus{border-color:var(--accent-blue)}
+.input-controls label{font-size:12px;color:var(--text-secondary);font-weight:500;white-space:nowrap}
+.input-row{display:flex;gap:10px;align-items:flex-end}
+.input-row textarea{
+  flex:1;padding:12px 16px;
+  background:var(--bg-input);color:var(--text-primary);
+  border:1px solid var(--border);border-radius:var(--radius);
+  font-size:14px;resize:none;
+  min-height:48px;max-height:160px;
+  line-height:1.5;
+}
+.input-row textarea:focus{border-color:var(--accent-blue)}
+.send-btn{
+  width:48px;height:48px;border-radius:var(--radius);
+  background:linear-gradient(135deg,var(--accent),var(--accent-purple));
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  transition:var(--transition);flex-shrink:0;
+}
+.send-btn:hover{opacity:0.9;transform:scale(1.05)}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.send-btn svg{width:20px;height:20px}
+.toggle-stream{
+  display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;
+}
+.toggle-stream input[type=checkbox]{accent-color:var(--accent-blue)}
+
+/* Modal */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;opacity:0;pointer-events:none;
+  transition:opacity 0.2s ease;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.active{opacity:1;pointer-events:all}
+.modal{
+  background:var(--bg-secondary);border:1px solid var(--border);
+  border-radius:var(--radius);
+  width:90%;max-width:640px;max-height:85vh;
+  box-shadow:var(--shadow);
+  display:flex;flex-direction:column;
+  transform:scale(0.95);transition:transform 0.2s ease;
+}
+.modal-overlay.active .modal{transform:scale(1)}
+.modal-header{
+  padding:20px 24px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-header h2{font-size:18px;font-weight:700}
+.modal-close{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--bg-hover);color:var(--text-secondary);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;transition:var(--transition);
+}
+.modal-close:hover{background:var(--accent);color:#fff}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.modal-footer{
+  padding:16px 24px;border-top:1px solid var(--border);
+  display:flex;justify-content:flex-end;gap:10px;
+}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+.form-group input,.form-group textarea,.form-group select{
+  width:100%;padding:10px 14px;
+  background:var(--bg-input);color:var(--text-primary);
+  border:1px solid var(--border);border-radius:var(--radius-xs);
+  font-size:14px;
+}
+.form-group textarea{resize:vertical;min-height:80px}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--accent-blue)}
+.form-group .hint{font-size:11px;color:var(--text-muted);margin-top:4px}
+
+/* Context items */
+.context-list{display:flex;flex-direction:column;gap:10px}
+.context-entry{
+  background:var(--bg-input);border:1px solid var(--border);
+  border-radius:var(--radius-xs);padding:12px;
+  position:relative;
+}
+.context-entry textarea{margin-bottom:8px}
+.context-entry input{margin-bottom:0}
+.remove-context{
+  position:absolute;top:8px;right:8px;
+  width:24px;height:24px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:var(--transition);
+}
+.remove-context:hover{background:var(--accent-hover)}
+.add-context-btn{
+  padding:8px;border:1px dashed var(--border);
+  border-radius:var(--radius-xs);color:var(--text-muted);
+  background:transparent;font-size:13px;
+  transition:var(--transition);
+}
+.add-context-btn:hover{border-color:var(--accent-blue);color:var(--accent-blue)}
+
+/* Checkbox */
+.checkbox-group{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.checkbox-group input[type=checkbox]{accent-color:var(--accent-blue);width:16px;height:16px}
+.checkbox-group label{font-size:13px;color:var(--text-secondary);margin:0}
+
+/* Loading */
+.spinner{
+  width:20px;height:20px;border:2px solid var(--border);
+  border-top-color:var(--accent-blue);border-radius:50%;
+  animation:spin 0.6s linear infinite;display:inline-block;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.loading-dots::after{
+  content:'';animation:dots 1.5s steps(4,end) infinite;
+}
+@keyframes dots{
+  0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}
+}
+
+/* Toast */
+.toast-container{position:fixed;top:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{
+  padding:12px 20px;border-radius:var(--radius-xs);
+  font-size:13px;font-weight:500;
+  box-shadow:var(--shadow);
+  animation:slideIn 0.3s ease;
+  max-width:400px;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+.toast.success{background:#38a169;color:#fff}
+.toast.error{background:#e53e3e;color:#fff}
+.toast.info{background:var(--accent-blue);color:#fff}
+
+/* Details panel */
+.details-panel{
+  padding:24px;overflow-y:auto;border-bottom:1px solid var(--border);
+  background:var(--bg-primary);max-height:250px;
+  display:none;
+}
+.details-panel.visible{display:block}
+.details-panel h4{font-size:13px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.details-panel .detail-row{
+  display:flex;gap:12px;margin-bottom:6px;font-size:13px;
+}
+.details-panel .detail-row .label{color:var(--text-muted);min-width:110px}
+.details-panel .detail-row .value{color:var(--text-primary)}
+.system-prompt-preview{
+  background:var(--bg-input);padding:12px;border-radius:var(--radius-xs);
+  font-size:13px;color:var(--text-secondary);
+  max-height:80px;overflow-y:auto;margin-top:8px;
+  white-space:pre-wrap;line-height:1.5;
+}
+.context-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.context-chip{
+  padding:4px 10px;background:rgba(66,153,225,0.1);
+  border:1px solid rgba(66,153,225,0.2);border-radius:10px;
+  font-size:11px;color:var(--accent-blue);
+}
+.toggle-details{
+  font-size:12px;color:var(--accent-blue);background:none;
+  text-decoration:underline;padding:0;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>&#9670; Assistant Agent</h1>
+      <div class="token-section">
+        <label>Bearer Token</label>
+        <div class="token-input">
+          <input type="password" id="tokenInput" placeholder="Paste your auth token..."/>
+          <button class="btn-sm btn-outline" onclick="toggleTokenVisibility()" id="toggleTokenBtn">Show</button>
+        </div>
+      </div>
+    </div>
+    <button class="new-assistant-btn" onclick="openCreateModal()">+ New Assistant</button>
+    <div class="assistant-list" id="assistantList"></div>
+    <div class="sidebar-footer">
+      Powered by LangGraph + FastAPI
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main" id="mainArea">
+    <div class="empty-state" id="emptyState">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
+        <path d="M16 7V5a4 4 0 00-8 0v2"/>
+        <circle cx="12" cy="14" r="2"/>
+      </svg>
+      <h2>Welcome to Assistant Agent</h2>
+      <p>Create or select an assistant from the sidebar to start chatting. Each assistant has its own system prompt, context, and configuration.</p>
+    </div>
+
+    <!-- Active Assistant View -->
+    <div id="assistantView" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div class="detail-header">
+        <div class="detail-header-left">
+          <h2 id="activeAssistantName"></h2>
+          <span class="source-badge" id="activeAssistantSource"></span>
+          <button class="toggle-details" onclick="toggleDetails()">Details</button>
+        </div>
+        <div class="detail-actions">
+          <button class="btn-sm btn-outline" onclick="openEditModal()">Edit</button>
+          <button class="btn-sm btn-danger" onclick="deleteCurrentAssistant()">Delete</button>
+        </div>
+      </div>
+
+      <div class="details-panel" id="detailsPanel">
+        <h4>Assistant Details</h4>
+        <div class="detail-row"><span class="label">ID</span><span class="value" id="detailId"></span></div>
+        <div class="detail-row"><span class="label">Description</span><span class="value" id="detailDesc"></span></div>
+        <div class="detail-row"><span class="label">Created By</span><span class="value" id="detailCreatedBy"></span></div>
+        <div class="detail-row"><span class="label">System Assist</span><span class="value" id="detailSysAssist"></span></div>
+        <h4 style="margin-top:12px">System Prompt</h4>
+        <div class="system-prompt-preview" id="detailSystemPrompt"></div>
+        <h4 style="margin-top:12px">Contexts</h4>
+        <div class="context-chips" id="detailContexts"></div>
+      </div>
+
+      <div class="chat-area">
+        <div class="messages" id="messagesContainer">
+          <div class="chat-welcome" id="chatWelcome">
+            <h3>Start a conversation</h3>
+            <p>Send a prompt to this assistant. Choose a model and optionally set a target language below.</p>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <div class="input-controls">
+            <label>Model</label>
+            <select id="modelSelect">
+              <optgroup label="Anthropic">
+                <option value="claude-sonnet-4-20250514">Claude Sonnet 4.0</option>
+                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+                <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
+              </optgroup>
+              <optgroup label="OpenAI">
+                <option value="gpt-4">GPT-4</option>
+                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+              </optgroup>
+              <optgroup label="Google">
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-2.5-flash-thinking">Gemini 2.5 Flash Thinking</option>
+                <option value="gemini-pro-vision">Gemini Pro Vision</option>
+                <option value="gemini-pro">Gemini Pro</option>
+              </optgroup>
+              <optgroup label="Dharmamitra">
+                <option value="dharamitra">Dharmamitra</option>
+              </optgroup>
+            </select>
+            <label>Target Language</label>
+            <input type="text" id="targetLang" placeholder="e.g. English, Tibetan..." style="width:160px"/>
+            <label class="toggle-stream">
+              <input type="checkbox" id="streamToggle" checked/> Stream
+            </label>
+          </div>
+          <div class="input-row">
+            <textarea id="promptInput" placeholder="Type your message... (Shift+Enter for newline)" rows="1"
+              onkeydown="handleInputKeydown(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="modalTitle">New Assistant</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Name *</label>
+        <input type="text" id="formName" placeholder="My Translation Assistant"/>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="formDescription" placeholder="What does this assistant do?" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Source Type</label>
+        <input type="text" id="formSourceType" placeholder="e.g. translation, summarization..."/>
+      </div>
+      <div class="form-group">
+        <label>System Prompt *</label>
+        <textarea id="formSystemPrompt" placeholder="You are a helpful translation assistant..." rows="4"></textarea>
+      </div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="formSystemAssistance"/>
+        <label for="formSystemAssistance">System Assistance</label>
+      </div>
+      <div class="form-group">
+        <label>Contexts</label>
+        <div class="hint" style="margin-bottom:8px">Add context documents or file URLs for the assistant.</div>
+        <div class="context-list" id="contextList"></div>
+        <button class="add-context-btn" onclick="addContextEntry()" style="margin-top:8px;width:100%">+ Add Context</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn-sm btn-primary" id="modalSubmitBtn" onclick="submitModal()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const API_BASE = '';
+let assistants = [];
+let activeAssistant = null;
+let editingId = null;
+let chatHistories = {};
+let isSending = false;
+
+function getToken() {
+  return document.getElementById('tokenInput').value.trim();
+}
+
+function authHeaders() {
+  const t = getToken();
+  const h = {'Content-Type':'application/json'};
+  if (t) h['Authorization'] = 'Bearer ' + t;
+  return h;
+}
+
+function toast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const d = document.createElement('div');
+  d.className = 'toast ' + type;
+  d.textContent = msg;
+  c.appendChild(d);
+  setTimeout(() => { d.style.opacity='0'; d.style.transform='translateX(40px)'; setTimeout(()=>d.remove(),300) }, 3500);
+}
+
+function toggleTokenVisibility() {
+  const inp = document.getElementById('tokenInput');
+  const btn = document.getElementById('toggleTokenBtn');
+  if (inp.type === 'password') { inp.type='text'; btn.textContent='Hide'; }
+  else { inp.type='password'; btn.textContent='Show'; }
+}
+
+// Assistants
+async function loadAssistants() {
+  try {
+    const r = await fetch(API_BASE + '/assistant?skip=0&limit=100', {headers: authHeaders()});
+    if (!r.ok) throw new Error('Failed to load');
+    const data = await r.json();
+    assistants = data.assistants || [];
+    renderAssistantList();
+  } catch(e) {
+    assistants = [];
+    renderAssistantList();
+  }
+}
+
+function renderAssistantList() {
+  const list = document.getElementById('assistantList');
+  if (!assistants.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No assistants yet.<br/>Create one to get started.</div>';
+    return;
+  }
+  list.innerHTML = assistants.map(a => `
+    <div class="assistant-item ${activeAssistant && activeAssistant.id === a.id ? 'active' : ''}"
+         onclick="selectAssistant('${a.id}')">
+      <h3>${esc(a.name)}</h3>
+      <p>${esc(a.description || 'No description')}</p>
+      ${a.source_type ? `<span class="badge">${esc(a.source_type)}</span>` : ''}
+    </div>
+  `).join('');
+}
+
+async function selectAssistant(id) {
+  const token = getToken();
+  if (!token) { toast('Please enter a bearer token first','error'); return; }
+  try {
+    const r = await fetch(API_BASE + '/assistant/' + id, {headers: authHeaders()});
+    if (!r.ok) throw new Error('Failed to load assistant');
+    activeAssistant = await r.json();
+    renderAssistantList();
+    showAssistantView();
+  } catch(e) {
+    toast('Error loading assistant: ' + e.message, 'error');
+  }
+}
+
+function showAssistantView() {
+  document.getElementById('emptyState').style.display = 'none';
+  const v = document.getElementById('assistantView');
+  v.style.display = 'flex';
+  document.getElementById('activeAssistantName').textContent = activeAssistant.name;
+  document.getElementById('activeAssistantSource').textContent = activeAssistant.source_type || 'general';
+  document.getElementById('detailId').textContent = activeAssistant.id;
+  document.getElementById('detailDesc').textContent = activeAssistant.description || '—';
+  document.getElementById('detailCreatedBy').textContent = activeAssistant.created_by || '—';
+  document.getElementById('detailSysAssist').textContent = activeAssistant.system_assistance ? 'Yes' : 'No';
+  document.getElementById('detailSystemPrompt').textContent = activeAssistant.system_prompt;
+  const ctxDiv = document.getElementById('detailContexts');
+  if (activeAssistant.contexts && activeAssistant.contexts.length) {
+    ctxDiv.innerHTML = activeAssistant.contexts.map((c,i) =>
+      `<span class="context-chip">${c.content ? 'Text #'+(i+1) : ''}${c.file_url ? 'File: '+esc(c.file_url) : ''}</span>`
+    ).join('');
+  } else {
+    ctxDiv.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">No contexts</span>';
+  }
+  document.getElementById('detailsPanel').classList.remove('visible');
+  renderMessages();
+}
+
+function toggleDetails() {
+  document.getElementById('detailsPanel').classList.toggle('visible');
+}
+
+// Create / Edit Modal
+function openCreateModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'New Assistant';
+  document.getElementById('modalSubmitBtn').textContent = 'Create';
+  clearForm();
+  addContextEntry();
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function openEditModal() {
+  if (!activeAssistant) return;
+  editingId = activeAssistant.id;
+  document.getElementById('modalTitle').textContent = 'Edit Assistant';
+  document.getElementById('modalSubmitBtn').textContent = 'Save Changes';
+  document.getElementById('formName').value = activeAssistant.name || '';
+  document.getElementById('formDescription').value = activeAssistant.description || '';
+  document.getElementById('formSourceType').value = activeAssistant.source_type || '';
+  document.getElementById('formSystemPrompt').value = activeAssistant.system_prompt || '';
+  document.getElementById('formSystemAssistance').checked = activeAssistant.system_assistance || false;
+  const cl = document.getElementById('contextList');
+  cl.innerHTML = '';
+  if (activeAssistant.contexts && activeAssistant.contexts.length) {
+    activeAssistant.contexts.forEach(c => addContextEntry(c.content, c.file_url));
+  } else {
+    addContextEntry();
+  }
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+
+function clearForm() {
+  document.getElementById('formName').value = '';
+  document.getElementById('formDescription').value = '';
+  document.getElementById('formSourceType').value = '';
+  document.getElementById('formSystemPrompt').value = '';
+  document.getElementById('formSystemAssistance').checked = false;
+  document.getElementById('contextList').innerHTML = '';
+}
+
+function addContextEntry(content='', fileUrl='') {
+  const cl = document.getElementById('contextList');
+  const div = document.createElement('div');
+  div.className = 'context-entry';
+  div.innerHTML = `
+    <button class="remove-context" onclick="this.parentElement.remove()">&times;</button>
+    <textarea placeholder="Context content..." rows="2" class="ctx-content" style="width:100%;padding:8px 10px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:13px;margin-bottom:8px">${esc(content)}</textarea>
+    <input type="text" placeholder="File URL (optional)" class="ctx-file" value="${esc(fileUrl)}" style="width:100%;padding:8px 10px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:13px"/>
+  `;
+  cl.appendChild(div);
+}
+
+function getContextsFromForm() {
+  const entries = document.querySelectorAll('#contextList .context-entry');
+  const contexts = [];
+  entries.forEach(e => {
+    const content = e.querySelector('.ctx-content').value.trim();
+    const file_url = e.querySelector('.ctx-file').value.trim();
+    if (content || file_url) contexts.push({content: content||null, file_url: file_url||null});
+  });
+  return contexts;
+}
+
+async function submitModal() {
+  const token = getToken();
+  if (!token) { toast('Please enter a bearer token','error'); return; }
+  const name = document.getElementById('formName').value.trim();
+  const system_prompt = document.getElementById('formSystemPrompt').value.trim();
+  if (!name || !system_prompt) { toast('Name and System Prompt are required','error'); return; }
+
+  const body = {
+    name,
+    description: document.getElementById('formDescription').value.trim() || null,
+    source_type: document.getElementById('formSourceType').value.trim() || null,
+    system_prompt,
+    system_assistance: document.getElementById('formSystemAssistance').checked,
+    contexts: getContextsFromForm()
+  };
+
+  try {
+    let r;
+    if (editingId) {
+      r = await fetch(API_BASE + '/assistant/' + editingId, {method:'PUT', headers:authHeaders(), body:JSON.stringify(body)});
+    } else {
+      r = await fetch(API_BASE + '/assistant', {method:'POST', headers:authHeaders(), body:JSON.stringify(body)});
+    }
+    if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err.detail?.message || 'Request failed'); }
+    toast(editingId ? 'Assistant updated!' : 'Assistant created!', 'success');
+    closeModal();
+    await loadAssistants();
+    if (editingId) await selectAssistant(editingId);
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+async function deleteCurrentAssistant() {
+  if (!activeAssistant) return;
+  if (!confirm('Delete "' + activeAssistant.name + '"? This cannot be undone.')) return;
+  const token = getToken();
+  if (!token) { toast('Please enter a bearer token','error'); return; }
+  try {
+    const r = await fetch(API_BASE + '/assistant/' + activeAssistant.id, {method:'DELETE', headers:authHeaders()});
+    if (!r.ok && r.status !== 204) throw new Error('Failed to delete');
+    toast('Assistant deleted', 'success');
+    delete chatHistories[activeAssistant.id];
+    activeAssistant = null;
+    document.getElementById('assistantView').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'flex';
+    await loadAssistants();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// Chat
+function renderMessages() {
+  const container = document.getElementById('messagesContainer');
+  const history = chatHistories[activeAssistant.id] || [];
+  if (!history.length) {
+    container.innerHTML = `<div class="chat-welcome" id="chatWelcome">
+      <h3>Start a conversation</h3>
+      <p>Send a prompt to this assistant. Choose a model and optionally set a target language below.</p>
+    </div>`;
+    return;
+  }
+  container.innerHTML = history.map(m => {
+    if (m.role === 'user') {
+      return `<div class="message user">${esc(m.content)}</div>`;
+    } else {
+      return `<div class="message assistant">${formatAssistantMessage(m)}</div>`;
+    }
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function updateLastMessage() {
+  const container = document.getElementById('messagesContainer');
+  const lastEl = container.lastElementChild;
+  if (!lastEl) return;
+  const history = chatHistories[activeAssistant.id] || [];
+  const lastMsg = history[history.length - 1];
+  if (!lastMsg || lastMsg.role === 'user') return;
+  lastEl.innerHTML = formatAssistantMessage(lastMsg);
+  const isNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 100;
+  if (isNearBottom) container.scrollTop = container.scrollHeight;
+}
+
+function formatAssistantMessage(m) {
+  let html = '';
+  if (m.results && m.results.length) {
+    m.results.forEach(r => {
+      html += `<div style="margin-bottom:12px">`;
+      html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Original:</div>`;
+      html += `<div style="padding:8px 12px;background:var(--bg-input);border-radius:6px;font-size:13px;margin-bottom:8px">${esc(r.original_text)}</div>`;
+      html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Translated:</div>`;
+      html += `<div style="padding:8px 12px;background:var(--bg-input);border-radius:6px;font-size:13px">${esc(r.translated_text)}</div>`;
+      if (r.metadata) {
+        html += `<div class="meta">Model: ${esc(r.metadata.model_used)} | Type: ${esc(r.metadata.text_type)}</div>`;
+      }
+      html += `</div>`;
+    });
+  }
+  if (m.metadata) {
+    html += `<div class="meta">Batches: ${m.metadata.total_batches} | Time: ${m.metadata.total_processing_time?.toFixed(2)}s</div>`;
+  }
+  if (m.streamContent) {
+    html += `<div style="white-space:pre-wrap">${esc(m.streamContent)}</div>`;
+  }
+  if (m.errors && m.errors.length) {
+    html += `<div style="color:#fc8181;margin-top:8px;font-size:13px">Errors: ${esc(JSON.stringify(m.errors))}</div>`;
+  }
+  if (m.error) {
+    html += `<div style="color:#fc8181">${esc(m.error)}</div>`;
+  }
+  return html || '<span style="color:var(--text-muted)">Empty response</span>';
+}
+
+function handleInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!isSending) sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  document.getElementById('sendBtn').disabled = !el.value.trim();
+}
+
+async function sendMessage() {
+  if (isSending || !activeAssistant) return;
+  const input = document.getElementById('promptInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const token = getToken();
+  if (!token) { toast('Please enter a bearer token','error'); return; }
+
+  const model = document.getElementById('modelSelect').value;
+  const targetLang = document.getElementById('targetLang').value.trim() || null;
+  const useStream = document.getElementById('streamToggle').checked;
+
+  if (!chatHistories[activeAssistant.id]) chatHistories[activeAssistant.id] = [];
+  chatHistories[activeAssistant.id].push({role:'user', content:text});
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+  isSending = true;
+  renderMessages();
+
+  const prompts = text.split('\\n').filter(l => l.trim());
+
+  const payload = {
+    assistant_id: activeAssistant.id,
+    prompt: prompts,
+    model: model,
+    target_language: targetLang
+  };
+
+  if (useStream) {
+    await sendStream(payload);
+  } else {
+    await sendNormal(payload);
+  }
+  isSending = false;
+}
+
+async function sendNormal(payload) {
+  const loadingMsg = {role:'assistant', streamContent:'Thinking...'};
+  chatHistories[activeAssistant.id].push(loadingMsg);
+  renderMessages();
+
+  try {
+    console.log('[AI Route] Calling POST /ai endpoint', {payload, url: API_BASE + '/ai'});
+    const r = await fetch(API_BASE + '/ai', {method:'POST', headers:authHeaders(), body:JSON.stringify(payload)});
+    console.log('[AI Route] POST /ai response status:', r.status, r.statusText);
+    if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err.detail?.message || err.detail || 'Request failed'); }
+    const data = await r.json();
+    const msgs = chatHistories[activeAssistant.id];
+    msgs[msgs.length - 1] = {role:'assistant', results:data.results, metadata:data.metadata, errors:data.errors};
+    renderMessages();
+  } catch(e) {
+    const msgs = chatHistories[activeAssistant.id];
+    msgs[msgs.length - 1] = {role:'assistant', error: e.message};
+    renderMessages();
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+async function sendStream(payload) {
+  const streamMsg = {role:'assistant', streamContent:''};
+  chatHistories[activeAssistant.id].push(streamMsg);
+  renderMessages();
+
+  try {
+    console.log('[AI Route] Calling POST /ai/stream endpoint', {payload, url: API_BASE + '/ai/stream'});
+    const r = await fetch(API_BASE + '/ai/stream', {method:'POST', headers:authHeaders(), body:JSON.stringify(payload)});
+    console.log('[AI Route] POST /ai/stream response status:', r.status, r.statusText);
+    if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err.detail?.message || err.detail || 'Stream failed'); }
+
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let rawBuffer = '';
+    let textContent = '';
+    let completionData = null;
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      rawBuffer += decoder.decode(value, {stream:true});
+
+      const lines = rawBuffer.split('\\n');
+      rawBuffer = lines.pop();
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const jsonStr = trimmed.slice(5).trim();
+        if (!jsonStr) continue;
+        try {
+          const evt = JSON.parse(jsonStr);
+          if (evt.type === 'token' && evt.data != null) {
+            textContent += evt.data;
+            const msgs = chatHistories[activeAssistant.id];
+            msgs[msgs.length - 1].streamContent = textContent;
+            updateLastMessage();
+          } else if (evt.type === 'completion' && evt.results) {
+            completionData = evt;
+          }
+        } catch(_) {}
+      }
+    }
+
+    if (rawBuffer.trim()) {
+      const trimmed = rawBuffer.trim();
+      if (trimmed.startsWith('data:')) {
+        try {
+          const evt = JSON.parse(trimmed.slice(5).trim());
+          if (evt.type === 'token' && evt.data != null) {
+            textContent += evt.data;
+          } else if (evt.type === 'completion' && evt.results) {
+            completionData = evt;
+          }
+        } catch(_) {}
+      }
+    }
+
+    const msgs = chatHistories[activeAssistant.id];
+    if (completionData && completionData.results) {
+      msgs[msgs.length - 1] = {
+        role:'assistant',
+        results: completionData.results,
+        metadata: {
+          total_batches: completionData.total_texts || 1,
+          total_processing_time: completionData.total_processing_time
+        },
+        errors: completionData.errors || []
+      };
+    } else {
+      msgs[msgs.length - 1].streamContent = textContent;
+    }
+    renderMessages();
+  } catch(e) {
+    const msgs = chatHistories[activeAssistant.id];
+    msgs[msgs.length - 1] = {role:'assistant', error: e.message};
+    renderMessages();
+    toast('Stream error: ' + e.message, 'error');
+  }
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+// Init
+document.getElementById('tokenInput').addEventListener('input', () => { loadAssistants(); });
+
+// Auto-load on page load (public endpoint, no auth needed for listing)
+loadAssistants();
+</script>
+</body>
+</html>
+"""

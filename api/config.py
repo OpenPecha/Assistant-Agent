@@ -15,7 +15,7 @@ DEFAULT = dict(
     LANGSMITH_PROJECT="your-langsmith-project",
     LANGSMITH_TRACING="true",
     MAX_BATCH_SIZE="50",
-    MAX_QUERY_LENGTH="100",
+    MAX_QUERY_LENGTH="10000",
 )
 
 def get(key: str) -> str:
