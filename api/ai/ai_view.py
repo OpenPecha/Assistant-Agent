@@ -1,5 +1,5 @@
 from api.ai.ai_response_model import StreamRequest
-from api.ai.ai_service import get_translation_response_service, get_translation_response_stream_service
+from api.ai.ai_service import run_workflow_service, stream_workflow_service
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from starlette import status
@@ -23,7 +23,7 @@ SSE_HEADERS = {
 
 
 @ai_router.post("", status_code=status.HTTP_200_OK)
-async def get_translation_response(
+async def run_workflow(
     payload: StreamRequest, 
     authentication_credential: Annotated[
         HTTPAuthorizationCredentials, Depends(oauth2_scheme)
@@ -40,7 +40,7 @@ async def get_translation_response(
             ).model_dump()
         )
 
-    return await get_translation_response_service(
+    return await run_workflow_service(
         assistant_id=payload.assistant_id,
         target_language=payload.target_language,
         prompt=payload.prompt,
@@ -49,7 +49,7 @@ async def get_translation_response(
 
 
 @ai_router.post("/stream", status_code=status.HTTP_200_OK)
-async def get_translation_response_stream(
+async def stream_workflow(
     payload: StreamRequest, 
     authentication_credential: Annotated[
         HTTPAuthorizationCredentials, Depends(oauth2_scheme)
@@ -67,7 +67,7 @@ async def get_translation_response_stream(
         )
 
     return StreamingResponse(
-        get_translation_response_stream_service(
+        stream_workflow_service(
             assistant_id=payload.assistant_id,
             target_language=payload.target_language,
             prompt=payload.prompt,

@@ -36,7 +36,7 @@ def validate_model(model: str) -> None:
         )
 
 
-async def get_translation_response_service(assistant_id, target_language, prompt, model):
+async def run_workflow_service(assistant_id, target_language, prompt, model):
     validate_model(model)
     
     with SessionLocal() as db_session:
@@ -76,7 +76,7 @@ async def get_translation_response_service(assistant_id, target_language, prompt
     return response
 
 
-async def get_translation_response_stream_service(
+async def stream_workflow_service(
     assistant_id, 
     target_language, 
     prompt, 
