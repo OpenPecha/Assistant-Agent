@@ -26,8 +26,8 @@ class ResultMetadata(BaseModel):
 
 
 class TranslationResult(BaseModel):
-    original_text: str
-    translated_text: str
+    input_text: str
+    output_text: str
     metadata: ResultMetadata
 
 

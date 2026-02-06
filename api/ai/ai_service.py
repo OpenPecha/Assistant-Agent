@@ -48,8 +48,8 @@ async def run_workflow_service(assistant_id, target_language, prompt, model):
     
     results = [
         TranslationResult(
-            original_text=result.original_text,
-            translated_text=result.translated_text,
+            input_text=result.input_text,
+            output_text=result.output_text,
             metadata=ResultMetadata(
                 batch_id=result.metadata.get("batch_id"),
                 model_used=result.metadata.get("model_used"),

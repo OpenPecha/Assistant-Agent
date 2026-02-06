@@ -788,10 +788,10 @@ function formatAssistantMessage(m) {
   if (m.results && m.results.length) {
     m.results.forEach(r => {
       html += `<div style="margin-bottom:12px">`;
-      html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Original:</div>`;
-      html += `<div style="padding:8px 12px;background:var(--bg-input);border-radius:6px;font-size:13px;margin-bottom:8px">${esc(r.original_text)}</div>`;
-      html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Translated:</div>`;
-      html += `<div style="padding:8px 12px;background:var(--bg-input);border-radius:6px;font-size:13px">${esc(r.translated_text)}</div>`;
+      html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Input:</div>`;
+      html += `<div style="padding:8px 12px;background:var(--bg-input);border-radius:6px;font-size:13px;margin-bottom:8px">${esc(r.input_text)}</div>`;
+      html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Output:</div>`;
+      html += `<div style="padding:8px 12px;background:var(--bg-input);border-radius:6px;font-size:13px">${esc(r.output_text)}</div>`;
       if (r.metadata) {
         html += `<div class="meta">Model: ${esc(r.metadata.model_used)} | Type: ${esc(r.metadata.text_type)}</div>`;
       }

@@ -17,8 +17,8 @@ class Batch(BaseModel):
 
 class Result(BaseModel):
     """Result for a single text processing (translation or Q&A response)."""
-    original_text: str
-    translated_text: str
+    input_text: str
+    output_text: str
     metadata: Dict[str, Any]
 
 

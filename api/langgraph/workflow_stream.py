@@ -87,8 +87,8 @@ async def stream_workflow_events(
                     
                     results_data = [
                         {
-                            "original_text": result.original_text,
-                            "translated_text": result.translated_text,
+                            "input_text": result.input_text,
+                            "output_text": result.output_text,
                             "metadata": {
                                 "batch_id": result.metadata.get("batch_id"),
                                 "model_used": result.metadata.get("model_used"),
@@ -141,9 +141,9 @@ async def stream_workflow_events(
                 
                 if langgraph_node == "process_batch" and accumulated_text:
                     yield create_event("text_complete", {
-                        "status": "text_translated",
+                        "status": "text_completed",
                         "batch_index": current_batch_info["batch_index"],
-                        "translated_text": accumulated_text
+                        "output_text": accumulated_text
                     })
                     accumulated_text = ""
         

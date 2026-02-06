@@ -37,8 +37,8 @@ async def process_batch(state: WorkflowState) -> WorkflowState:
             output_text = clean_translation_text(response.content)
 
             result = Result(
-                original_text=input_text,
-                translated_text=output_text,
+                input_text=input_text,
+                output_text=output_text,
                 metadata={
                     "batch_id": current_batch.batch_id,
                     "model_used": current_batch.model_name,
