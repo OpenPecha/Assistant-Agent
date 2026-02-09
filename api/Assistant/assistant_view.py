@@ -47,5 +47,6 @@ async def update_assistant(
 ) -> AssistantInfoResponse:
     return update_assistant_service(
         assistant_id=assistant_id,
-        update_request=update_request
+        update_request=update_request,
+        token=authentication_credential.credentials
     )

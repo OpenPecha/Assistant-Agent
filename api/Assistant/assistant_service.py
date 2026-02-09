@@ -9,6 +9,8 @@ from typing import List
 from api.Assistant.assistant_model import Assistant, Context
 from uuid import UUID
 from datetime import datetime, timezone
+from fastapi import HTTPException, status
+from api.error_constant import ErrorConstants
 
 
 def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
@@ -75,10 +77,12 @@ def delete_assistant_service(assistant_id: UUID):
     with SessionLocal() as db_session:
         delete_assistant_repository(db=db_session, assistant_id=assistant_id)
 
-def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistantRequest) -> AssistantInfoResponse:
+def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistantRequest, token: str) -> AssistantInfoResponse:
+    current_user_email=validate_and_extract_user_email(token=token)
     with SessionLocal() as db_session:
         assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
-        
+        if current_user_email != assistant.created_by:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ErrorConstants.UNAUTHORIZED_ERROR_MESSAGE)
         if update_request.name is not None:
             assistant.name = update_request.name
         if update_request.source_type is not None:

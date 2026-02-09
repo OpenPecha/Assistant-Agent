@@ -9,6 +9,7 @@ class ErrorConstants:
     ASSISTANT_NOT_FOUND="Assistant not found"
     FAILED_TO_DELETE_ASSISTANT="Failed to delete assistant"
     FAILED_TO_UPDATE_ASSISTANT="Failed to update assistant"
+    UNAUTHORIZED_ERROR_MESSAGE="Unauthorized, your email does not match the assistant creator's email"
 
 class ResponseError(BaseModel):
     error: str
