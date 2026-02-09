@@ -7,8 +7,7 @@ from api.langgraph.workflow_stream import stream_workflow_events
 from api.ai.ai_response_model import (
     WorkflowRequest, 
     StreamResponse, 
-    TranslationResult, 
-    ResultMetadata, 
+    WorkflowResult, 
     ResponseMetadata,
     AvailableModelsResponse,
     ModelInfo
@@ -55,15 +54,7 @@ async def run_workflow_service(assistant_id, target_language, prompt, model):
     workflow_response = await run_workflow(workflow_request)
     
     results = [
-        TranslationResult(
-            input_text=result.input_text,
-            output_text=result.output_text,
-            metadata=ResultMetadata(
-                batch_id=result.metadata.get("batch_id"),
-                model_used=result.metadata.get("model_used"),
-                text_type=result.metadata.get("text_type")
-            )
-        )
+        WorkflowResult(output_text=result.output_text)
         for result in workflow_response.get("final_results", [])
     ]
     
