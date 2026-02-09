@@ -1,4 +1,4 @@
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Dict
 from api.Assistant.assistant_response_model import ContextRequest
 from pydantic import BaseModel, Field
 from uuid import UUID
@@ -11,6 +11,17 @@ class WorkflowRequest(BaseModel):
     target_language: Optional[str] = None
     text: List[str]
     model: str
+
+
+class ModelInfo(BaseModel):
+    provider: str
+    description: str
+    capabilities: List[str]
+    context_window: Optional[int] = None
+
+
+class AvailableModelsResponse(BaseModel):
+    models: Dict[str, ModelInfo]
 
 
 class StreamRequest(BaseModel):
