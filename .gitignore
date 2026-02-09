@@ -12,3 +12,4 @@ build/
 .env
 local_setup/data/*
 .local_setup/data/*
+config.example.py
