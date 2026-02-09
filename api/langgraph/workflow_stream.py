@@ -86,15 +86,7 @@ async def stream_workflow_events(
                     total_processing_time = time.time() - workflow_start_time
                     
                     results_data = [
-                        {
-                            "input_text": result.input_text,
-                            "output_text": result.output_text,
-                            "metadata": {
-                                "batch_id": result.metadata.get("batch_id"),
-                                "model_used": result.metadata.get("model_used"),
-                                "text_type": result.metadata.get("text_type")
-                            }
-                        }
+                        {"output_text": result.output_text}
                         for result in final_results
                     ]
                     

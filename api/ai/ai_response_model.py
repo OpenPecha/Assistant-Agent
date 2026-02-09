@@ -30,16 +30,8 @@ class StreamRequest(BaseModel):
     prompt: List[str] = Field(min_length=1)
     model: str = Field(min_length=1)
 
-class ResultMetadata(BaseModel):
-    batch_id: str
-    model_used: str
-    text_type: str
-
-
-class TranslationResult(BaseModel):
-    input_text: str
+class WorkflowResult(BaseModel):
     output_text: str
-    metadata: ResultMetadata
 
 
 class ResponseMetadata(BaseModel):
@@ -50,6 +42,6 @@ class ResponseMetadata(BaseModel):
 
 
 class StreamResponse(BaseModel):
-    results: List[TranslationResult]
+    results: List[WorkflowResult]
     metadata: ResponseMetadata
     errors: List[Any]
