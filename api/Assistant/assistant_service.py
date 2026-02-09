@@ -73,8 +73,14 @@ def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoResponse:
             system_assistance=assistant.system_assistance
         )
 
-def delete_assistant_service(assistant_id: UUID):
+def delete_assistant_service(assistant_id: UUID, token: str):
+    current_user_email=validate_and_extract_user_email(token=token)
     with SessionLocal() as db_session:
+        assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
+        if current_user_email != assistant.created_by:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ErrorConstants.UNAUTHORIZED_ERROR_MESSAGE)
+        if assistant.system_assistance:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ErrorConstants.FORBIDDEN_ERROR_MESSAGE)
         delete_assistant_repository(db=db_session, assistant_id=assistant_id)
 
 def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistantRequest, token: str) -> AssistantInfoResponse:

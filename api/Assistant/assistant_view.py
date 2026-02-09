@@ -37,7 +37,7 @@ async def delete_assistant(
     assistant_id: UUID,
     authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]
 ):
-    return delete_assistant_service(assistant_id=assistant_id)
+    return delete_assistant_service(assistant_id=assistant_id, token=authentication_credential.credentials)
 
 @assistant_router.put("/{assistant_id}", status_code=status.HTTP_200_OK)
 async def update_assistant(
