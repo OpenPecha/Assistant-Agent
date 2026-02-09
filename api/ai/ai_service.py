@@ -4,7 +4,15 @@ from api.Assistant.assistant_repository import get_assistant_by_id_repository
 from api.Assistant.assistant_response_model import ContextRequest
 from api.langgraph.workflow_init import run_workflow
 from api.langgraph.workflow_stream import stream_workflow_events
-from api.ai.ai_response_model import WorkflowRequest, StreamResponse, TranslationResult, ResultMetadata, ResponseMetadata
+from api.ai.ai_response_model import (
+    WorkflowRequest, 
+    StreamResponse, 
+    TranslationResult, 
+    ResultMetadata, 
+    ResponseMetadata,
+    AvailableModelsResponse,
+    ModelInfo
+)
 from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
 from fastapi import HTTPException
@@ -95,3 +103,18 @@ async def stream_workflow_service(
         model=model
     ):
         yield event
+
+def get_available_models_service() -> AvailableModelsResponse:
+    model_router = get_model_router()
+    available_models_dict = model_router.available_models()
+    
+    models = {}
+    for model_name, model_data in available_models_dict.items():
+        models[model_name] = ModelInfo(
+            provider=model_data["provider"],
+            description=model_data["description"],
+            capabilities=model_data["capabilities"],
+            context_window=model_data.get("context_window")
+        )
+    
+    return AvailableModelsResponse(models=models)

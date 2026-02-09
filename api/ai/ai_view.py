@@ -1,5 +1,5 @@
-from api.ai.ai_response_model import StreamRequest
-from api.ai.ai_service import run_workflow_service, stream_workflow_service
+from api.ai.ai_response_model import StreamRequest, AvailableModelsResponse
+from api.ai.ai_service import run_workflow_service, stream_workflow_service, get_available_models_service
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from starlette import status
@@ -21,6 +21,10 @@ SSE_HEADERS = {
     "X-Accel-Buffering": "no"
 }
 
+
+@ai_router.get("/models", status_code=status.HTTP_200_OK, response_model=AvailableModelsResponse)
+async def get_available_models():
+    return get_available_models_service()
 
 @ai_router.post("", status_code=status.HTTP_200_OK)
 async def run_workflow(
