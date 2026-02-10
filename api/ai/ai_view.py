@@ -3,12 +3,10 @@ from api.ai.ai_service import run_workflow_service, stream_workflow_service, get
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from starlette import status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Annotated
+from api.Auth.auth_repository import get_optional_token
+from typing import Annotated, Optional
 from api.config import get
 from api.error_constant import ErrorConstants, ResponseError
-
-oauth2_scheme = HTTPBearer()
 
 ai_router = APIRouter(
     prefix="/ai",
@@ -29,9 +27,7 @@ async def get_available_models():
 @ai_router.post("", status_code=status.HTTP_200_OK)
 async def run_workflow(
     payload: StreamRequest, 
-    authentication_credential: Annotated[
-        HTTPAuthorizationCredentials, Depends(oauth2_scheme)
-    ],
+    token: Annotated[Optional[str], Depends(get_optional_token)],
 ):
     max_query_length = get("MAX_QUERY_LENGTH")
     total_prompt_length = sum(len(p) for p in payload.prompt)
@@ -55,9 +51,7 @@ async def run_workflow(
 @ai_router.post("/stream", status_code=status.HTTP_200_OK)
 async def stream_workflow(
     payload: StreamRequest, 
-    authentication_credential: Annotated[
-        HTTPAuthorizationCredentials, Depends(oauth2_scheme)
-    ],
+    token: Annotated[Optional[str], Depends(get_optional_token)],
 ):
     max_query_length = get("MAX_QUERY_LENGTH")
     total_prompt_length = sum(len(p) for p in payload.prompt)
