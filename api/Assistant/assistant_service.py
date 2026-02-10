@@ -1,16 +1,16 @@
 
 
-from api.Users.user_service import validate_and_extract_user_email
 from api.db.pg_database import SessionLocal
 from api.Assistant.assistant_repository import get_all_assistants, get_assistant_by_id_repository, delete_assistant_repository, update_assistant_repository
 from api.Assistant.assistant_response_model import AssistantRequest, AssistantResponse, AssistantInfoResponse, ContextResponse, UpdateAssistantRequest
 from api.Assistant.assistant_repository import create_assistant_repository
-from typing import List
+from typing import List, Optional
 from api.Assistant.assistant_model import Assistant, Context
 from uuid import UUID
 from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from api.error_constant import ErrorConstants
+from api.Auth.auth_repository import get_current_user_email
 
 
 def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
@@ -38,8 +38,9 @@ def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
             total=total
         )
 
-def create_assistant_service(token: str, assistant_request: AssistantRequest):
-    current_user_email=validate_and_extract_user_email(token=token)
+def create_assistant_service(token: Optional[str], assistant_request: AssistantRequest):
+    current_user_email = get_current_user_email(token=token)
+
     with SessionLocal() as db_session:
         assistant = Assistant(
         name=assistant_request.name,
@@ -73,8 +74,8 @@ def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoResponse:
             system_assistance=assistant.system_assistance
         )
 
-def delete_assistant_service(assistant_id: UUID, token: str):
-    current_user_email=validate_and_extract_user_email(token=token)
+def delete_assistant_service(assistant_id: UUID, token: Optional[str]):
+    current_user_email = get_current_user_email(token=token)
     with SessionLocal() as db_session:
         assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
         if current_user_email != assistant.created_by:
@@ -83,8 +84,8 @@ def delete_assistant_service(assistant_id: UUID, token: str):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ErrorConstants.FORBIDDEN_ERROR_MESSAGE)
         delete_assistant_repository(db=db_session, assistant_id=assistant_id)
 
-def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistantRequest, token: str) -> AssistantInfoResponse:
-    current_user_email=validate_and_extract_user_email(token=token)
+def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistantRequest, token: Optional[str]) -> AssistantInfoResponse:
+    current_user_email = get_current_user_email(token=token)
     with SessionLocal() as db_session:
         assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
         if current_user_email != assistant.created_by:
