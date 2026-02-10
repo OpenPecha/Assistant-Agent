@@ -5,10 +5,6 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import requests
 
-SECRET = get("SECRET")
-DEMO_MODE = get("DEMO_MODE").lower() == "true"
-DEMO_EMAIL = get("DEMO_EMAIL") or "dharmaduta@gmail.com"
-
 optional_bearer = HTTPBearer(auto_error=False)
 
 def get_optional_token(
@@ -17,7 +13,7 @@ def get_optional_token(
     if credentials:
         return credentials.credentials
     
-    if DEMO_MODE:
+    if get("DEMO_MODE").lower() == "true":
         return None
     
     raise HTTPException(
@@ -34,8 +30,8 @@ def get_current_user_email(token: Optional[str] = None) -> str:
         except (ValueError, JWTError) as e:
             raise ValueError(f"Invalid token: {e}")
     
-    if DEMO_MODE:
-        return DEMO_EMAIL
+    if get("DEMO_MODE").lower() == "true":
+        return get("DEMO_EMAIL")
     
     raise ValueError("Authentication token required")
 
