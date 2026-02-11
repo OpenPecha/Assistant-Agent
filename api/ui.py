@@ -555,8 +555,7 @@ let isSending = false;
 // Initialize demo mode UI
 if (DEMO_MODE) {
   document.getElementById('demoModeSection').style.display = 'block';
-  document.getElementById('tokenOptional').style.display = 'inline';
-  document.getElementById('tokenSection').classList.add('demo-mode');
+  document.getElementById('tokenSection').style.display = 'none';
 }
 
 function getToken() {
