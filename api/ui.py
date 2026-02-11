@@ -655,11 +655,10 @@ function loginWithGoogle() {
   sessionStorage.setItem('auth0_nonce', nonce);
   
   const authUrl = `https://${AUTH0_DOMAIN}/authorize?` +
-    `response_type=token id_token&` +
+    `response_type=id_token&` +
     `client_id=${AUTH0_CLIENT_ID}&` +
     `redirect_uri=${encodeURIComponent(AUTH0_REDIRECT_URI)}&` +
     `scope=openid profile email&` +
-    `audience=${encodeURIComponent(AUTH0_AUDIENCE)}&` +
     `connection=google-oauth2&` +
     `state=${state}&` +
     `nonce=${nonce}`;
@@ -681,7 +680,6 @@ function handleAuthCallback() {
   if (!hash) return;
   
   const params = new URLSearchParams(hash);
-  const accessToken = params.get('access_token');
   const idToken = params.get('id_token');
   const state = params.get('state');
   const error = params.get('error');
@@ -694,9 +692,9 @@ function handleAuthCallback() {
   
   const savedState = sessionStorage.getItem('auth0_state');
   
-  if (accessToken && state === savedState) {
+  if (idToken && state === savedState) {
     // Use the ID token for API authentication
-    document.getElementById('tokenInput').value = idToken || accessToken;
+    document.getElementById('tokenInput').value = idToken;
     document.getElementById('tokenInput').readOnly = false;
     document.getElementById('tokenInput').style.cursor = 'text';
     document.getElementById('tokenInput').style.background = 'var(--bg-input)';
