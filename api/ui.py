@@ -1206,9 +1206,7 @@ async function sendNormal(payload) {
   renderMessages();
 
   try {
-    console.log('[AI Route] Calling POST /ai endpoint', {payload, url: API_BASE + '/ai'});
     const r = await fetch(API_BASE + '/ai', {method:'POST', headers:authHeaders(), body:JSON.stringify(payload)});
-    console.log('[AI Route] POST /ai response status:', r.status, r.statusText);
     if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err.detail?.message || err.detail || 'Request failed'); }
     const data = await r.json();
     const msgs = chatHistories[activeAssistant.id];
@@ -1228,9 +1226,7 @@ async function sendStream(payload) {
   renderMessages();
 
   try {
-    console.log('[AI Route] Calling POST /ai/stream endpoint', {payload, url: API_BASE + '/ai/stream'});
     const r = await fetch(API_BASE + '/ai/stream', {method:'POST', headers:authHeaders(), body:JSON.stringify(payload)});
-    console.log('[AI Route] POST /ai/stream response status:', r.status, r.statusText);
     if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err.detail?.message || err.detail || 'Stream failed'); }
 
     const reader = r.body.getReader();
