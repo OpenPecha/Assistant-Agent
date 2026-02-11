@@ -25,7 +25,9 @@ def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
             contexts=[ContextResponse(
                 id=context.id,
                 content=context.content,
-                file_url=context.file_url
+                file_url=context.file_url,
+                pecha_title=context.pecha_title,
+                pecha_text_id=context.pecha_text_id
             ) for context in assistant.contexts],
             created_by=assistant.created_by,
             system_assistance=assistant.system_assistance
@@ -50,7 +52,7 @@ def create_assistant_service(token: Optional[str], assistant_request: AssistantR
         system_assistance=assistant_request.system_assistance,
         created_by=current_user_email,
         contexts=[
-            Context(content=ctx.content, file_url=ctx.file_url)
+            Context(content=ctx.content, file_url=ctx.file_url, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
             for ctx in assistant_request.contexts
         ]
     )
@@ -68,7 +70,9 @@ def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoResponse:
             contexts=[ContextResponse(
                 id=context.id,
                 content=context.content,
-                file_url=context.file_url
+                file_url=context.file_url,
+                pecha_title=context.pecha_title,
+                pecha_text_id=context.pecha_text_id
             ) for context in assistant.contexts],
             created_by=assistant.created_by,
             system_assistance=assistant.system_assistance
@@ -104,7 +108,7 @@ def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistant
             for context in assistant.contexts:
                 db_session.delete(context)
             assistant.contexts = [
-                Context(content=ctx.content, file_url=ctx.file_url)
+                Context(content=ctx.content, file_url=ctx.file_url, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
                 for ctx in update_request.contexts
             ]
         
@@ -121,7 +125,9 @@ def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistant
             contexts=[ContextResponse(
                 id=context.id,
                 content=context.content,
-                file_url=context.file_url
+                file_url=context.file_url,
+                pecha_title=context.pecha_title,
+                pecha_text_id=context.pecha_text_id
             ) for context in assistant.contexts],
             created_by=assistant.created_by,
             system_assistance=assistant.system_assistance

@@ -316,6 +316,75 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
 }
 .add-context-btn:hover{border-color:var(--accent-blue);color:var(--accent-blue)}
 
+/* Context type selector */
+.ctx-type-select{
+  width:100%;padding:8px 10px;margin-bottom:10px;
+  background:var(--bg-primary);color:var(--text-primary);
+  border:1px solid var(--border);border-radius:var(--radius-xs);
+  font-size:13px;cursor:pointer;
+}
+.ctx-type-select:focus{border-color:var(--accent-blue)}
+.ctx-field-area{margin-top:4px}
+
+/* Search within context */
+.ctx-search-row{display:flex;gap:8px;margin-bottom:8px}
+.ctx-search-row input{
+  flex:1;padding:8px 10px;
+  background:var(--bg-primary);color:var(--text-primary);
+  border:1px solid var(--border);border-radius:var(--radius-xs);font-size:13px;
+}
+.ctx-search-row input:focus{border-color:var(--accent-blue)}
+.ctx-search-btn{
+  padding:6px 14px;border-radius:var(--radius-xs);
+  background:var(--accent-blue);color:#fff;font-size:12px;font-weight:600;
+  white-space:nowrap;transition:var(--transition);
+}
+.ctx-search-btn:hover{background:#3182ce}
+.ctx-search-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* Search results dropdown */
+.ctx-search-results{
+  max-height:200px;overflow-y:auto;
+  border:1px solid var(--border);border-radius:var(--radius-xs);
+  margin-bottom:8px;
+}
+.ctx-search-results::-webkit-scrollbar{width:4px}
+.ctx-search-results::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.ctx-search-result-item{
+  padding:10px 12px;font-size:12px;line-height:1.5;
+  color:var(--text-secondary);cursor:pointer;
+  border-bottom:1px solid var(--border);
+  transition:var(--transition);
+}
+.ctx-search-result-item:last-child{border-bottom:none}
+.ctx-search-result-item:hover{background:var(--bg-hover);color:var(--text-primary)}
+.ctx-search-result-item .result-lang{
+  display:inline-block;padding:1px 6px;border-radius:8px;
+  font-size:10px;font-weight:600;margin-right:6px;
+  background:rgba(159,122,234,0.15);color:var(--accent-purple);
+}
+.ctx-search-no-results{
+  padding:12px;text-align:center;font-size:12px;color:var(--text-muted);
+}
+
+/* Pecha capsule tags */
+.pecha-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pecha-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:16px;
+  background:rgba(56,178,172,0.15);border:1px solid rgba(56,178,172,0.3);
+  color:var(--accent-green);font-size:12px;font-weight:500;
+  animation:fadeIn 0.3s ease;
+}
+.pecha-tag .pecha-tag-remove{
+  width:16px;height:16px;border-radius:50%;
+  background:rgba(56,178,172,0.3);color:var(--accent-green);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;cursor:pointer;transition:var(--transition);
+  border:none;padding:0;line-height:1;
+}
+.pecha-tag .pecha-tag-remove:hover{background:var(--accent);color:#fff}
+
 /* Checkbox */
 .checkbox-group{display:flex;align-items:center;gap:8px;margin-bottom:18px}
 .checkbox-group input[type=checkbox]{accent-color:var(--accent-blue);width:16px;height:16px}
@@ -528,7 +597,7 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
       </div>
       <div class="form-group">
         <label>Contexts</label>
-        <div class="hint" style="margin-bottom:8px">Add context documents or file URLs for the assistant.</div>
+        <div class="hint" style="margin-bottom:8px">Add context via text content, file URL, or search Buddhist texts.</div>
         <div class="context-list" id="contextList"></div>
         <button class="add-context-btn" onclick="addContextEntry()" style="margin-top:8px;width:100%">+ Add Context</button>
       </div>
@@ -647,9 +716,12 @@ function showAssistantView() {
   document.getElementById('detailSystemPrompt').textContent = activeAssistant.system_prompt;
   const ctxDiv = document.getElementById('detailContexts');
   if (activeAssistant.contexts && activeAssistant.contexts.length) {
-    ctxDiv.innerHTML = activeAssistant.contexts.map((c,i) =>
-      `<span class="context-chip">${c.content ? 'Text #'+(i+1) : ''}${c.file_url ? 'File: '+esc(c.file_url) : ''}</span>`
-    ).join('');
+    ctxDiv.innerHTML = activeAssistant.contexts.map((c,i) => {
+      if (c.pecha_title) return `<span class="context-chip">Pecha: ${esc(c.pecha_title)}</span>`;
+      if (c.content) return `<span class="context-chip">Text #${i+1}</span>`;
+      if (c.file_url) return `<span class="context-chip">File: ${esc(c.file_url)}</span>`;
+      return `<span class="context-chip">Context #${i+1}</span>`;
+    }).join('');
   } else {
     ctxDiv.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">No contexts</span>';
   }
@@ -684,7 +756,12 @@ function openEditModal() {
   const cl = document.getElementById('contextList');
   cl.innerHTML = '';
   if (activeAssistant.contexts && activeAssistant.contexts.length) {
-    activeAssistant.contexts.forEach(c => addContextEntry(c.content, c.file_url));
+    activeAssistant.contexts.forEach(c => {
+      let type = 'content';
+      if (c.pecha_text_id) type = 'search';
+      else if (c.file_url) type = 'file';
+      addContextEntry(type, {content: c.content, file_url: c.file_url, pecha_title: c.pecha_title, pecha_text_id: c.pecha_text_id});
+    });
   } else {
     addContextEntry();
   }
@@ -705,25 +782,171 @@ function clearForm() {
   document.getElementById('contextList').innerHTML = '';
 }
 
-function addContextEntry(content='', fileUrl='') {
+function addContextEntry(type='content', data={}) {
   const cl = document.getElementById('contextList');
   const div = document.createElement('div');
   div.className = 'context-entry';
+  const entryId = 'ctx_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  div.setAttribute('data-entry-id', entryId);
+
+  let selectedType = type;
+  if (data.pecha_text_id) selectedType = 'search';
+  else if (data.file_url) selectedType = 'file';
+  else if (data.content) selectedType = 'content';
+
   div.innerHTML = `
     <button class="remove-context" onclick="this.parentElement.remove()">&times;</button>
-    <textarea placeholder="Context content..." rows="2" class="ctx-content" style="width:100%;padding:8px 10px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:13px;margin-bottom:8px">${esc(content)}</textarea>
-    <input type="text" placeholder="File URL (optional)" class="ctx-file" value="${esc(fileUrl)}" style="width:100%;padding:8px 10px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:13px"/>
+    <select class="ctx-type-select" onchange="onContextTypeChange(this)">
+      <option value="content" ${selectedType==='content'?'selected':''}>Content</option>
+      <option value="file" ${selectedType==='file'?'selected':''}>File URL</option>
+      <option value="search" ${selectedType==='search'?'selected':''}>Search Pecha</option>
+    </select>
+    <div class="ctx-field-area"></div>
   `;
   cl.appendChild(div);
+
+  const fieldArea = div.querySelector('.ctx-field-area');
+  if (selectedType === 'content') {
+    renderContentField(fieldArea, data.content || '');
+  } else if (selectedType === 'file') {
+    renderFileField(fieldArea, data.file_url || '');
+  } else if (selectedType === 'search') {
+    renderSearchField(fieldArea, data.pecha_title || '', data.pecha_text_id || '');
+  }
+}
+
+function onContextTypeChange(selectEl) {
+  const entry = selectEl.closest('.context-entry');
+  const fieldArea = entry.querySelector('.ctx-field-area');
+  fieldArea.innerHTML = '';
+  const type = selectEl.value;
+  if (type === 'content') renderContentField(fieldArea, '');
+  else if (type === 'file') renderFileField(fieldArea, '');
+  else if (type === 'search') renderSearchField(fieldArea, '', '');
+}
+
+function renderContentField(container, value) {
+  container.innerHTML = `
+    <textarea placeholder="Context content..." rows="3" class="ctx-content" style="width:100%;padding:8px 10px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:13px">${esc(value)}</textarea>
+  `;
+}
+
+function renderFileField(container, value) {
+  container.innerHTML = `
+    <input type="text" placeholder="File URL..." class="ctx-file" value="${esc(value)}" style="width:100%;padding:8px 10px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:13px"/>
+  `;
+}
+
+function renderSearchField(container, title, textId) {
+  container.innerHTML = `
+    <div class="ctx-search-row">
+      <input type="text" class="ctx-search-input" placeholder="Search Buddhist texts..." onkeydown="if(event.key==='Enter'){event.preventDefault();doContextSearch(this)}"/>
+      <button class="ctx-search-btn" onclick="doContextSearch(this.previousElementSibling)">Search</button>
+    </div>
+    <div class="ctx-search-results" style="display:none"></div>
+    <div class="pecha-tags"></div>
+    <input type="hidden" class="ctx-pecha-title" value="${esc(title)}"/>
+    <input type="hidden" class="ctx-pecha-text-id" value="${esc(textId)}"/>
+  `;
+  if (title && textId) {
+    const tagsDiv = container.querySelector('.pecha-tags');
+    addPechaTag(tagsDiv, container, title, textId);
+  }
+}
+
+let _searchResultsCache = {};
+
+async function doContextSearch(inputEl) {
+  const query = inputEl.value.trim();
+  if (!query) return;
+  const entry = inputEl.closest('.context-entry');
+  const resultsDiv = entry.querySelector('.ctx-search-results');
+  const btn = entry.querySelector('.ctx-search-btn');
+  btn.disabled = true;
+  btn.textContent = 'Searching...';
+  resultsDiv.style.display = 'block';
+  resultsDiv.innerHTML = '<div class="ctx-search-no-results"><span class="spinner"></span> Searching...</div>';
+
+  try {
+    const r = await fetch('https://search.buddhistai.tools/search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({limit:10, query:query, return_text:true, search_type:'exact'})
+    });
+    if (!r.ok) throw new Error('Search failed');
+    const data = await r.json();
+    const results = data.results || [];
+    if (!results.length) {
+      resultsDiv.innerHTML = '<div class="ctx-search-no-results">No results found</div>';
+    } else {
+      results.forEach(item => { _searchResultsCache[item.id] = item.entity?.text || ''; });
+      resultsDiv.innerHTML = results.map(item => {
+        const text = item.entity?.text || '';
+        const lang = item.entity?.language || '';
+        const displayText = text.length > 150 ? text.slice(0,150) + '...' : text;
+        return '<div class="ctx-search-result-item" data-result-id="' + esc(item.id) + '" onclick="selectSearchResult(this)">'
+          + '<span class="result-lang">' + esc(lang) + '</span>' + esc(displayText)
+          + '</div>';
+      }).join('');
+    }
+  } catch(e) {
+    resultsDiv.innerHTML = '<div class="ctx-search-no-results" style="color:#fc8181">Search error: ' + esc(e.message) + '</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Search';
+  }
+}
+
+function selectSearchResult(el) {
+  const id = el.getAttribute('data-result-id');
+  const fullText = _searchResultsCache[id] || '';
+  const entry = el.closest('.context-entry');
+  const fieldArea = entry.querySelector('.ctx-field-area');
+  const tagsDiv = fieldArea.querySelector('.pecha-tags');
+  const titleInput = fieldArea.querySelector('.ctx-pecha-title');
+  const idInput = fieldArea.querySelector('.ctx-pecha-text-id');
+  const resultsDiv = entry.querySelector('.ctx-search-results');
+
+  const displayTitle = fullText.length > 80 ? fullText.slice(0,80) + '...' : fullText;
+  titleInput.value = displayTitle;
+  idInput.value = id;
+  resultsDiv.style.display = 'none';
+
+  tagsDiv.innerHTML = '';
+  addPechaTag(tagsDiv, fieldArea, displayTitle, id);
+}
+
+function addPechaTag(tagsDiv, fieldArea, title, id) {
+  const tag = document.createElement('span');
+  tag.className = 'pecha-tag';
+  tag.innerHTML = `<span class="pecha-tag-text">${esc(title)}</span><button class="pecha-tag-remove" onclick="removePechaTag(this)">&times;</button>`;
+  tagsDiv.appendChild(tag);
+}
+
+function removePechaTag(btn) {
+  const entry = btn.closest('.context-entry');
+  const fieldArea = entry.querySelector('.ctx-field-area');
+  fieldArea.querySelector('.ctx-pecha-title').value = '';
+  fieldArea.querySelector('.ctx-pecha-text-id').value = '';
+  btn.closest('.pecha-tag').remove();
 }
 
 function getContextsFromForm() {
   const entries = document.querySelectorAll('#contextList .context-entry');
   const contexts = [];
   entries.forEach(e => {
-    const content = e.querySelector('.ctx-content').value.trim();
-    const file_url = e.querySelector('.ctx-file').value.trim();
-    if (content || file_url) contexts.push({content: content||null, file_url: file_url||null});
+    const type = e.querySelector('.ctx-type-select').value;
+    if (type === 'content') {
+      const content = e.querySelector('.ctx-content')?.value.trim();
+      if (content) contexts.push({content, file_url:null, pecha_title:null, pecha_text_id:null});
+    } else if (type === 'file') {
+      const file_url = e.querySelector('.ctx-file')?.value.trim();
+      if (file_url) contexts.push({content:null, file_url, pecha_title:null, pecha_text_id:null});
+    } else if (type === 'search') {
+      const pecha_title = e.querySelector('.ctx-pecha-title')?.value.trim();
+      const pecha_text_id = e.querySelector('.ctx-pecha-text-id')?.value.trim();
+      if (pecha_title && pecha_text_id) contexts.push({content:null, file_url:null, pecha_title, pecha_text_id});
+    }
   });
   return contexts;
 }
