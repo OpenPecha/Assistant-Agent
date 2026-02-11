@@ -1,14 +1,11 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from api.config import get
 
 ui_router = APIRouter(tags=["ui"])
 
 @ui_router.get("/", response_class=HTMLResponse)
 async def serve_ui():
-    demo_mode = get("DEMO_MODE").lower() == "true"
-    demo_email = get("DEMO_EMAIL") or "dharmaduta@gmail.com"
-    return HTML_CONTENT.replace("{{DEMO_MODE}}", str(demo_mode).lower()).replace("{{DEMO_EMAIL}}", demo_email)
+    return HTML_CONTENT
 
 HTML_CONTENT = """
 <!DOCTYPE html>
@@ -66,17 +63,6 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
 }
 .token-section{display:flex;flex-direction:column;gap:8px}
 .token-section label{font-size:12px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
-.token-section.demo-mode{opacity:0.6}
-.demo-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:6px 12px;border-radius:20px;
-  background:linear-gradient(135deg,var(--accent-green),#2c7a7b);
-  color:#fff;font-size:11px;font-weight:600;
-  text-transform:uppercase;letter-spacing:0.5px;
-}
-.demo-info{
-  font-size:11px;color:var(--accent-green);margin-top:4px;
-}
 .token-input{
   display:flex;gap:8px;
 }
@@ -456,12 +442,8 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
   <div class="sidebar">
     <div class="sidebar-header">
       <h1>&#9670; Assistant Agent</h1>
-      <div id="demoModeSection" style="display:none;margin-bottom:12px">
-        <span class="demo-badge">&#10003; Demo Mode Active</span>
-        <div class="demo-info">Using: {{DEMO_EMAIL}}</div>
-      </div>
-      <div class="token-section" id="tokenSection">
-        <label>Bearer Token <span id="tokenOptional" style="display:none;color:var(--text-muted)">(optional)</span></label>
+      <div class="token-section">
+        <label>Bearer Token</label>
         <div class="token-input">
           <input type="password" id="tokenInput" placeholder="Paste your auth token..."/>
           <button class="btn-sm btn-outline" onclick="toggleTokenVisibility()" id="toggleTokenBtn">Show</button>
@@ -614,18 +596,11 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
 
 <script>
 const API_BASE = '';
-const DEMO_MODE = {{DEMO_MODE}};
 let assistants = [];
 let activeAssistant = null;
 let editingId = null;
 let chatHistories = {};
 let isSending = false;
-
-// Initialize demo mode UI
-if (DEMO_MODE) {
-  document.getElementById('demoModeSection').style.display = 'block';
-  document.getElementById('tokenSection').style.display = 'none';
-}
 
 function getToken() {
   return document.getElementById('tokenInput').value.trim();
@@ -636,12 +611,6 @@ function authHeaders() {
   const h = {'Content-Type':'application/json'};
   if (t) h['Authorization'] = 'Bearer ' + t;
   return h;
-}
-
-function requiresToken() {
-  // In demo mode, token is optional
-  if (DEMO_MODE) return true;
-  return !!getToken();
 }
 
 function toast(msg, type='info') {
@@ -691,7 +660,8 @@ function renderAssistantList() {
 }
 
 async function selectAssistant(id) {
-  if (!requiresToken()) { toast('Please enter a bearer token first','error'); return; }
+  const token = getToken();
+  if (!token) { toast('Please enter a bearer token first','error'); return; }
   try {
     const r = await fetch(API_BASE + '/assistant/' + id, {headers: authHeaders()});
     if (!r.ok) throw new Error('Failed to load assistant');
@@ -952,7 +922,8 @@ function getContextsFromForm() {
 }
 
 async function submitModal() {
-  if (!requiresToken()) { toast('Please enter a bearer token','error'); return; }
+  const token = getToken();
+  if (!token) { toast('Please enter a bearer token','error'); return; }
   const name = document.getElementById('formName').value.trim();
   const system_prompt = document.getElementById('formSystemPrompt').value.trim();
   if (!name || !system_prompt) { toast('Name and System Prompt are required','error'); return; }
@@ -986,7 +957,8 @@ async function submitModal() {
 async function deleteCurrentAssistant() {
   if (!activeAssistant) return;
   if (!confirm('Delete "' + activeAssistant.name + '"? This cannot be undone.')) return;
-  if (!requiresToken()) { toast('Please enter a bearer token','error'); return; }
+  const token = getToken();
+  if (!token) { toast('Please enter a bearer token','error'); return; }
   try {
     const r = await fetch(API_BASE + '/assistant/' + activeAssistant.id, {method:'DELETE', headers:authHeaders()});
     if (!r.ok && r.status !== 204) throw new Error('Failed to delete');
@@ -1076,7 +1048,8 @@ async function sendMessage() {
   const input = document.getElementById('promptInput');
   const text = input.value.trim();
   if (!text) return;
-  if (!requiresToken()) { toast('Please enter a bearer token','error'); return; }
+  const token = getToken();
+  if (!token) { toast('Please enter a bearer token','error'); return; }
 
   const model = document.getElementById('modelSelect').value;
   const targetLang = document.getElementById('targetLang').value.trim() || null;

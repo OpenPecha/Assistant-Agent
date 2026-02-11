@@ -16,8 +16,6 @@ DEFAULT = dict(
     LANGSMITH_TRACING="true",
     MAX_BATCH_SIZE="50",
     MAX_QUERY_LENGTH="10000",
-    DEMO_MODE="true",
-    DEMO_EMAIL="dharmaduta@gmail.com"
 )
 
 def get(key: str) -> str:
