@@ -26,22 +26,22 @@ HTML_CONTENT = """
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg-primary:#1a1a2e;
-  --bg-secondary:#16213e;
-  --bg-tertiary:#0f3460;
-  --bg-card:#1e2a4a;
-  --bg-input:#0d1b36;
-  --bg-hover:#253a5e;
-  --text-primary:#e8e8e8;
-  --text-secondary:#a0aec0;
-  --text-muted:#6b7fa3;
+  --bg-primary:#f7f9fc;
+  --bg-secondary:#ffffff;
+  --bg-tertiary:#e8f0fe;
+  --bg-card:#ffffff;
+  --bg-input:#f1f5f9;
+  --bg-hover:#e2e8f0;
+  --text-primary:#1a202c;
+  --text-secondary:#4a5568;
+  --text-muted:#718096;
   --accent:#e94560;
   --accent-hover:#d63851;
   --accent-green:#38b2ac;
-  --accent-blue:#4299e1;
-  --accent-purple:#9f7aea;
-  --border:#2d3a5c;
-  --shadow:0 4px 20px rgba(0,0,0,0.3);
+  --accent-blue:#3182ce;
+  --accent-purple:#805ad5;
+  --border:#e2e8f0;
+  --shadow:0 4px 20px rgba(0,0,0,0.08);
   --radius:12px;
   --radius-sm:8px;
   --radius-xs:6px;
@@ -66,8 +66,6 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
 }
 .sidebar-header h1{
   font-size:18px;font-weight:700;
-  background:linear-gradient(135deg,var(--accent),var(--accent-purple));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
   margin-bottom:16px;
 }
 .token-section{display:flex;flex-direction:column;gap:8px}
@@ -99,9 +97,9 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
 .btn-google:hover{background:#357ae8}
 
 .new-assistant-btn{
-  margin:16px 20px;padding:12px;
-  background:linear-gradient(135deg,var(--accent),var(--accent-purple));
+  background:var(--accent-blue);
   color:#fff;border-radius:var(--radius-sm);
+  margin:16px 20px;padding:12px;
   font-weight:600;font-size:14px;
   transition:var(--transition);
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -452,7 +450,7 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-header">
-      <h1>&#9670; Assistant Agent</h1>
+      <h1> Assistant Agent</h1>
       <div class="token-section">
         <label>Authentication</label>
         <button class="btn-sm btn-google" onclick="loginWithGoogle()" id="googleLoginBtn" style="width:100%;margin-bottom:12px;background:#4285f4;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px">
