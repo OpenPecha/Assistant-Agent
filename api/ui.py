@@ -1,7 +1,16 @@
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from api.config import get
 
 ui_router = APIRouter(tags=["ui"])
+
+@ui_router.get("/config", response_class=JSONResponse)
+async def get_config():
+    """Endpoint to provide frontend configuration"""
+    return {
+        "auth0_domain": get("DOMAIN_NAME"),
+        "auth0_client_id": get("CLIENT_ID")
+    }
 
 @ui_router.get("/", response_class=HTMLResponse)
 async def serve_ui():
@@ -86,6 +95,8 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
 .btn-danger:hover{background:#c53030}
 .btn-success{background:var(--accent-green);color:#fff}
 .btn-success:hover{background:#2c9e94}
+.btn-google{background:#4285f4;color:#fff;border:none}
+.btn-google:hover{background:#357ae8}
 
 .new-assistant-btn{
   margin:16px 20px;padding:12px;
@@ -443,9 +454,18 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
     <div class="sidebar-header">
       <h1>&#9670; Assistant Agent</h1>
       <div class="token-section">
-        <label>Bearer Token</label>
+        <label>Authentication</label>
+        <button class="btn-sm btn-google" onclick="loginWithGoogle()" id="googleLoginBtn" style="width:100%;margin-bottom:12px;background:#4285f4;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+            <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9.003 18z" fill="#34A853"/>
+            <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+            <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"/>
+          </svg>
+          Get Token
+        </button>
         <div class="token-input">
-          <input type="password" id="tokenInput" placeholder="Paste your auth token..."/>
+          <input type="password" id="tokenInput" placeholder="Token will appear after login..." readonly style="background:var(--bg-primary);cursor:not-allowed"/>
           <button class="btn-sm btn-outline" onclick="toggleTokenVisibility()" id="toggleTokenBtn">Show</button>
         </div>
       </div>
@@ -596,11 +616,114 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
 
 <script>
 const API_BASE = '';
+let AUTH0_DOMAIN = '';
+let AUTH0_CLIENT_ID = '';
+const AUTH0_REDIRECT_URI = window.location.origin + '/';
+let AUTH0_AUDIENCE = '';
+
 let assistants = [];
 let activeAssistant = null;
 let editingId = null;
 let chatHistories = {};
 let isSending = false;
+
+// Load Auth0 configuration
+async function loadAuth0Config() {
+  try {
+    const r = await fetch(API_BASE + '/config');
+    if (r.ok) {
+      const config = await r.json();
+      AUTH0_DOMAIN = config.auth0_domain;
+      AUTH0_CLIENT_ID = config.auth0_client_id;
+      AUTH0_AUDIENCE = `https://${AUTH0_DOMAIN}/api/v2/`;
+    }
+  } catch(e) {
+    console.error('Failed to load Auth0 config', e);
+  }
+}
+
+// Auth0 Google Login
+function loginWithGoogle() {
+  if (!AUTH0_DOMAIN || !AUTH0_CLIENT_ID) {
+    toast('Auth0 configuration not loaded. Please refresh the page.', 'error');
+    return;
+  }
+  
+  const state = generateRandomString(32);
+  const nonce = generateRandomString(32);
+  sessionStorage.setItem('auth0_state', state);
+  sessionStorage.setItem('auth0_nonce', nonce);
+  
+  const authUrl = `https://${AUTH0_DOMAIN}/authorize?` +
+    `response_type=token id_token&` +
+    `client_id=${AUTH0_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(AUTH0_REDIRECT_URI)}&` +
+    `scope=openid profile email&` +
+    `audience=${encodeURIComponent(AUTH0_AUDIENCE)}&` +
+    `connection=google-oauth2&` +
+    `state=${state}&` +
+    `nonce=${nonce}`;
+  
+  window.location.href = authUrl;
+}
+
+function generateRandomString(length) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+function handleAuthCallback() {
+  const hash = window.location.hash.substring(1);
+  if (!hash) return;
+  
+  const params = new URLSearchParams(hash);
+  const accessToken = params.get('access_token');
+  const idToken = params.get('id_token');
+  const state = params.get('state');
+  const error = params.get('error');
+  
+  if (error) {
+    toast('Login failed: ' + (params.get('error_description') || error), 'error');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return;
+  }
+  
+  const savedState = sessionStorage.getItem('auth0_state');
+  
+  if (accessToken && state === savedState) {
+    // Use the ID token for API authentication
+    document.getElementById('tokenInput').value = idToken || accessToken;
+    document.getElementById('tokenInput').readOnly = false;
+    document.getElementById('tokenInput').style.cursor = 'text';
+    document.getElementById('tokenInput').style.background = 'var(--bg-input)';
+    
+    sessionStorage.removeItem('auth0_state');
+    sessionStorage.removeItem('auth0_nonce');
+    
+    // Clear the hash from URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    toast('Successfully logged in with Google!', 'success');
+    
+    // Store user info
+    try {
+      const base64Url = idToken.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
+      sessionStorage.setItem('user_email', payload.email || '');
+      sessionStorage.setItem('user_name', payload.name || '');
+    } catch(e) {
+      console.error('Failed to parse token', e);
+    }
+    
+    // Auto-load assistants
+    loadAssistants();
+  }
+}
 
 function getToken() {
   return document.getElementById('tokenInput').value.trim();
@@ -1194,8 +1317,12 @@ function esc(s) {
 // Init
 document.getElementById('tokenInput').addEventListener('input', () => { loadAssistants(); });
 
-// Auto-load on page load (public endpoint, no auth needed for listing)
-loadAssistants();
+// Initialize app
+(async function init() {
+  await loadAuth0Config();
+  handleAuthCallback();
+  loadAssistants();
+})();
 </script>
 </body>
 </html>
