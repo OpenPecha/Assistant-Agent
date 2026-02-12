@@ -15,7 +15,8 @@ def validate_file(file: UploadFile) -> None:
             detail=ErrorConstants.INVALID_FILE_FORMAT
         )
 
-    if hasattr(file, 'size') and file.size and file.size > get_int("MAX_FILE_SIZE"):
+    max_file_size_bytes = get_int("MAX_FILE_SIZE_MB") * 1024 * 1024
+    if hasattr(file, 'size') and file.size and file.size > max_file_size_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, 
             detail=ErrorConstants.FILE_TOO_LARGE

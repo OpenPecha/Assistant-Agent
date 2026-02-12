@@ -22,7 +22,7 @@ DEFAULT = dict(
     AWS_BUCKET_OWNER="your-aws-bucket-owner",
     AWS_BUCKET_NAME="your-aws-bucket-name",
     ALLOWED_EXTENSIONS={'.pdf', '.docx', '.txt', 'doc'},
-    MAX_FILE_SIZE=10 * 1024 * 1024,
+    MAX_FILE_SIZE_MB=10,
 )
 
 def get(key: str) -> str:
