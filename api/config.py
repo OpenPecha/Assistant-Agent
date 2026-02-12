@@ -29,3 +29,9 @@ def get(key: str) -> str:
     if key in os.environ:
         return os.environ[key]
     return str(DEFAULT.get(key, ""))
+
+def get_int(key: str) -> int:
+    try:
+        return int(get(key))
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"Could not convert the value for key '{key}' to int: {e}")
