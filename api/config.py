@@ -16,9 +16,22 @@ DEFAULT = dict(
     LANGSMITH_TRACING="true",
     MAX_BATCH_SIZE="50",
     MAX_QUERY_LENGTH="10000",
+    AWS_ACCESS_KEY="your-aws-access-key",
+    AWS_SECRET_KEY="your-aws-secret-key",
+    AWS_REGION="your-aws-region",
+    AWS_BUCKET_OWNER="your-aws-bucket-owner",
+    AWS_BUCKET_NAME="your-aws-bucket-name",
+    ALLOWED_EXTENSIONS={'.pdf', '.docx', '.txt', 'doc'},
+    MAX_FILE_SIZE=10 * 1024 * 1024,
 )
 
 def get(key: str) -> str:
     if key in os.environ:
         return os.environ[key]
     return str(DEFAULT.get(key, ""))
+
+def get_int(key: str) -> int:
+    try:
+        return int(get(key))
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"Could not convert the value for key '{key}' to int: {e}")

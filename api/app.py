@@ -4,6 +4,7 @@ from starlette import status
 from api.Assistant import assistant_view
 from api.ai import ai_view
 from api.ui import ui_router
+from api.upload import media_view
 import uvicorn
 
 api = FastAPI(
@@ -28,6 +29,7 @@ async def health_check():
 api.include_router(ui_router)
 api.include_router(assistant_view.assistant_router)
 api.include_router(ai_view.ai_router)
+api.include_router(media_view.media_router)
 
 if __name__ == "__main__":
     uvicorn.run("api.app:api", host="127.0.0.1", port=8000, reload=True)

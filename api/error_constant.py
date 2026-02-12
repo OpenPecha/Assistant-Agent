@@ -10,6 +10,8 @@ class ErrorConstants:
     FAILED_TO_DELETE_ASSISTANT="Failed to delete assistant"
     FAILED_TO_UPDATE_ASSISTANT="Failed to update assistant"
     UNAUTHORIZED_ERROR_MESSAGE="Unauthorized, your email does not match the assistant creator's email"
+    INVALID_FILE_FORMAT="Invalid file format"
+    FILE_TOO_LARGE="File size exceeds the maximum allowed size"
 
 class ResponseError(BaseModel):
     error: str
