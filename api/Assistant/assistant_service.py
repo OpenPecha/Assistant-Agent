@@ -1,5 +1,5 @@
 
-
+import logging
 from api.Users.user_service import validate_and_extract_user_email
 from api.db.pg_database import SessionLocal
 from api.Assistant.assistant_repository import get_all_assistants, get_assistant_by_id_repository, delete_assistant_repository, update_assistant_repository
@@ -11,6 +11,8 @@ from uuid import UUID
 from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from api.error_constant import ErrorConstants
+from api.upload.S3_utils import generate_presigned_access_url, delete_file
+from api.config import get
 
 
 def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
@@ -25,7 +27,12 @@ def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
             contexts=[ContextResponse(
                 id=context.id,
                 content=context.content,
-                file_url=context.file_url,
+                file_url=(
+                    generate_presigned_access_url(
+                        bucket_name=get("AWS_BUCKET_NAME"),
+                        s3_key=context.file_url
+                    ) if context.file_url else None
+                ),
                 pecha_title=context.pecha_title,
                 pecha_text_id=context.pecha_text_id
             ) for context in assistant.contexts],
@@ -69,7 +76,12 @@ def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoResponse:
             contexts=[ContextResponse(
                 id=context.id,
                 content=context.content,
-                file_url=context.file_url,
+                file_url=(
+                    generate_presigned_access_url(
+                        bucket_name=get("AWS_BUCKET_NAME"),
+                        s3_key=context.file_url
+                    ) if context.file_url else None
+                ),
                 pecha_title=context.pecha_title,
                 pecha_text_id=context.pecha_text_id
             ) for context in assistant.contexts],
@@ -85,6 +97,14 @@ def delete_assistant_service(assistant_id: UUID, token: str):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ErrorConstants.UNAUTHORIZED_ERROR_MESSAGE)
         if assistant.system_assistance:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ErrorConstants.FORBIDDEN_ERROR_MESSAGE)
+        
+        for context in assistant.contexts:
+            if context.file_url:
+                try:
+                    delete_file(context.file_url)
+                except Exception as e:
+                    logging.error(f"Failed to delete S3 file {context.file_url}: {str(e)}")
+        
         delete_assistant_repository(db=db_session, assistant_id=assistant_id)
 
 def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistantRequest, token: str) -> AssistantInfoResponse:
@@ -124,7 +144,12 @@ def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistant
             contexts=[ContextResponse(
                 id=context.id,
                 content=context.content,
-                file_url=context.file_url,
+                file_url=(
+                    generate_presigned_access_url(
+                        bucket_name=get("AWS_BUCKET_NAME"),
+                        s3_key=context.file_url
+                    ) if context.file_url else None
+                ),
                 pecha_title=context.pecha_title,
                 pecha_text_id=context.pecha_text_id
             ) for context in assistant.contexts],
