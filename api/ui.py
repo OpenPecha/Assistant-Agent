@@ -991,12 +991,12 @@ async function handleFileSelect(inputEl) {
 
     const data = await r.json();
     
-    // Store the file URL
-    hiddenUrlInput.value = data.file_url;
+    // Store the S3 key (not the temporary presigned URL)
+    hiddenUrlInput.value = data.key;
 
     // Re-render the field to show success state
     const fieldArea = entry.querySelector('.ctx-field-area');
-    renderFileField(fieldArea, data.file_url);
+    renderFileField(fieldArea, data.key);
 
     toast('File uploaded successfully!', 'success');
   } catch (e) {
