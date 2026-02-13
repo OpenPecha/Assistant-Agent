@@ -320,6 +320,7 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
 }
 .ctx-type-select:focus{border-color:var(--accent-blue)}
 .ctx-field-area{margin-top:4px}
+.ctx-file-btn:hover{border-color:var(--accent-blue);color:var(--accent-blue);background:var(--bg-hover)}
 
 /* Search within context */
 .ctx-search-row{display:flex;gap:8px;margin-bottom:8px}
@@ -597,9 +598,14 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
       </div>
       <div class="form-group">
         <label>Contexts</label>
-        <div class="hint" style="margin-bottom:8px">Add context via text content, file URL, or search Buddhist texts.</div>
+        <div class="hint" style="margin-bottom:8px">Select a context type to add.</div>
+        <select class="ctx-type-select" id="globalContextTypeSelect" onchange="addContextFromGlobal()" style="margin-bottom:12px">
+          <option value="">-- Select context type --</option>
+          <option value="content">Content</option>
+          <option value="file">File URL</option>
+          <option value="search">Search Pecha</option>
+        </select>
         <div class="context-list" id="contextList"></div>
-        <button class="add-context-btn" onclick="addContextEntry()" style="margin-top:8px;width:100%">+ Add Context</button>
       </div>
     </div>
     <div class="modal-footer">
@@ -828,7 +834,6 @@ function openCreateModal() {
   document.getElementById('modalTitle').textContent = 'New Assistant';
   document.getElementById('modalSubmitBtn').textContent = 'Create';
   clearForm();
-  addContextEntry();
   document.getElementById('modalOverlay').classList.add('active');
 }
 
@@ -851,8 +856,6 @@ function openEditModal() {
       else if (c.file_url) type = 'file';
       addContextEntry(type, {content: c.content, file_url: c.file_url, pecha_title: c.pecha_title, pecha_text_id: c.pecha_text_id});
     });
-  } else {
-    addContextEntry();
   }
   document.getElementById('modalOverlay').classList.add('active');
 }
@@ -871,25 +874,41 @@ function clearForm() {
   document.getElementById('contextList').innerHTML = '';
 }
 
+function addContextFromGlobal() {
+  const globalSelect = document.getElementById('globalContextTypeSelect');
+  const type = globalSelect.value;
+  if (!type) return;
+  
+  addContextEntry(type, {});
+  
+  // Reset the global dropdown
+  globalSelect.value = '';
+}
+
 function addContextEntry(type='content', data={}) {
   const cl = document.getElementById('contextList');
   const div = document.createElement('div');
   div.className = 'context-entry';
   const entryId = 'ctx_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
   div.setAttribute('data-entry-id', entryId);
+  div.setAttribute('data-context-type', type);
 
   let selectedType = type;
   if (data.pecha_text_id) selectedType = 'search';
   else if (data.file_url) selectedType = 'file';
   else if (data.content) selectedType = 'content';
 
+  // Store type as data attribute for retrieval
+  div.setAttribute('data-context-type', selectedType);
+
+  // Add type label and remove button only
+  let typeLabel = 'Content';
+  if (selectedType === 'file') typeLabel = 'File URL';
+  else if (selectedType === 'search') typeLabel = 'Search Pecha';
+
   div.innerHTML = `
     <button class="remove-context" onclick="this.parentElement.remove()">&times;</button>
-    <select class="ctx-type-select" onchange="onContextTypeChange(this)">
-      <option value="content" ${selectedType==='content'?'selected':''}>Content</option>
-      <option value="file" ${selectedType==='file'?'selected':''}>File URL</option>
-      <option value="search" ${selectedType==='search'?'selected':''}>Search Pecha</option>
-    </select>
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">${typeLabel}</div>
     <div class="ctx-field-area"></div>
   `;
   cl.appendChild(div);
@@ -904,16 +923,6 @@ function addContextEntry(type='content', data={}) {
   }
 }
 
-function onContextTypeChange(selectEl) {
-  const entry = selectEl.closest('.context-entry');
-  const fieldArea = entry.querySelector('.ctx-field-area');
-  fieldArea.innerHTML = '';
-  const type = selectEl.value;
-  if (type === 'content') renderContentField(fieldArea, '');
-  else if (type === 'file') renderFileField(fieldArea, '');
-  else if (type === 'search') renderSearchField(fieldArea, '', '');
-}
-
 function renderContentField(container, value) {
   container.innerHTML = `
     <textarea placeholder="Context content..." rows="3" class="ctx-content" style="width:100%;padding:8px 10px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:13px">${esc(value)}</textarea>
@@ -921,9 +930,87 @@ function renderContentField(container, value) {
 }
 
 function renderFileField(container, value) {
+  const hasFile = value && value.trim();
   container.innerHTML = `
-    <input type="text" placeholder="File URL..." class="ctx-file" value="${esc(value)}" style="width:100%;padding:8px 10px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:13px"/>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${hasFile ? `
+        <div style="padding:8px 10px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:12px;display:flex;align-items:center;justify-content:space-between">
+          <span style="color:var(--accent-green);font-weight:500">✓ File uploaded</span>
+          <button class="btn-sm btn-danger" onclick="clearUploadedFile(this)" style="padding:4px 10px;font-size:11px">Remove</button>
+        </div>
+      ` : `
+        <div style="position:relative">
+          <input type="file" class="ctx-file-input" accept=".pdf,.docx,.txt,.doc" onchange="handleFileSelect(this)" style="display:none"/>
+          <button class="ctx-file-btn" onclick="this.previousElementSibling.click()" style="width:100%;padding:10px;background:var(--bg-input);color:var(--text-secondary);border:1px dashed var(--border);border-radius:var(--radius-xs);font-size:13px;cursor:pointer;transition:var(--transition)">
+            Choose file (.pdf, .docx, .txt, .doc)
+          </button>
+        </div>
+        <div class="ctx-file-status" style="font-size:11px;color:var(--text-muted);min-height:16px"></div>
+      `}
+      <input type="hidden" class="ctx-file-url" value="${esc(value)}"/>
+    </div>
   `;
+}
+
+async function handleFileSelect(inputEl) {
+  const file = inputEl.files?.[0];
+  if (!file) return;
+
+  const token = getToken();
+  if (!token) {
+    toast('Please enter a bearer token first', 'error');
+    inputEl.value = '';
+    return;
+  }
+
+  const entry = inputEl.closest('.context-entry');
+  const statusDiv = entry.querySelector('.ctx-file-status');
+  const fileBtn = entry.querySelector('.ctx-file-btn');
+  const hiddenUrlInput = entry.querySelector('.ctx-file-url');
+
+  // Show uploading status
+  if (statusDiv) statusDiv.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Uploading...';
+  if (fileBtn) fileBtn.disabled = true;
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const r = await fetch(API_BASE + '/media/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token
+      },
+      body: formData
+    });
+
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail?.message || err.detail || 'Upload failed');
+    }
+
+    const data = await r.json();
+    
+    // Store the file URL
+    hiddenUrlInput.value = data.file_url;
+
+    // Re-render the field to show success state
+    const fieldArea = entry.querySelector('.ctx-field-area');
+    renderFileField(fieldArea, data.file_url);
+
+    toast('File uploaded successfully!', 'success');
+  } catch (e) {
+    if (statusDiv) statusDiv.innerHTML = '<span style="color:#fc8181">Upload failed: ' + esc(e.message) + '</span>';
+    if (fileBtn) fileBtn.disabled = false;
+    toast('Upload error: ' + e.message, 'error');
+    inputEl.value = '';
+  }
+}
+
+function clearUploadedFile(btn) {
+  const entry = btn.closest('.context-entry');
+  const fieldArea = entry.querySelector('.ctx-field-area');
+  renderFileField(fieldArea, '');
 }
 
 function renderSearchField(container, title, textId) {
@@ -1024,12 +1111,12 @@ function getContextsFromForm() {
   const entries = document.querySelectorAll('#contextList .context-entry');
   const contexts = [];
   entries.forEach(e => {
-    const type = e.querySelector('.ctx-type-select').value;
+    const type = e.getAttribute('data-context-type');
     if (type === 'content') {
       const content = e.querySelector('.ctx-content')?.value.trim();
       if (content) contexts.push({content, file_url:null, pecha_title:null, pecha_text_id:null});
     } else if (type === 'file') {
-      const file_url = e.querySelector('.ctx-file')?.value.trim();
+      const file_url = e.querySelector('.ctx-file-url')?.value.trim();
       if (file_url) contexts.push({content:null, file_url, pecha_title:null, pecha_text_id:null});
     } else if (type === 'search') {
       const pecha_title = e.querySelector('.ctx-pecha-title')?.value.trim();
