@@ -1,8 +1,3 @@
-"""
-Context processor for handling different types of contexts (text, file, pecha).
-Processes file URLs by downloading from S3 and extracting content.
-"""
-
 import logging
 from typing import List, Optional
 from io import BytesIO
