@@ -32,6 +32,7 @@ httpx = "^0.28.1"
 rich = "^14.3.1"
 boto3 = "^1.35.0"
 python-multipart = "^0.0.10"
+pypdf = "^6.7.0"
 
 [tool.poetry.scripts]
 start = "uvicorn:main"
