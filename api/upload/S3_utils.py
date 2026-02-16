@@ -8,6 +8,7 @@ import logging
 from starlette import status
 
 from ..config import get
+from ..error_constant import ErrorConstants
 
 s3_client = boto3.client(
     "s3",
@@ -32,10 +33,10 @@ def upload_file(bucket_name: str, s3_key: str, file: UploadFile) -> str:
         return s3_key
     except ClientError as e:
         logging.error(e)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to upload file to S3.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorConstants.FAILED_TO_UPLOAD_FILE_TO_S3)
     except Exception as e:
         logging.error(e)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="An unexpected error occurred.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorConstants.AN_UNEXPECTED_ERROR_OCCURRED)
 
 
 def upload_bytes(bucket_name: str, s3_key: str, file: BytesIO, content_type: str) -> str:
@@ -52,10 +53,10 @@ def upload_bytes(bucket_name: str, s3_key: str, file: BytesIO, content_type: str
         return s3_key
     except ClientError as e:
         logging.error(e)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to upload file to S3.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorConstants.FAILED_TO_UPLOAD_FILE_TO_S3)
     except Exception as e:
         logging.error(e)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="An unexpected error occurred.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorConstants.AN_UNEXPECTED_ERROR_OCCURRED)
 
 
 def generate_presigned_access_url(bucket_name: str, s3_key: str):
@@ -83,5 +84,37 @@ def delete_file(file_path: str):
         return True
     except ClientError as e:
         if e.response['Error']['Code'] != 'NoSuchKey':
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error deleting old image.")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ErrorConstants.FAILED_TO_DELETE_FILE)
         return False
+
+def download_file_from_s3(bucket_name: str, s3_key: str) -> BytesIO:
+    try:
+        file_obj = BytesIO()
+        s3_client.download_fileobj(
+            Bucket=bucket_name,
+            Key=s3_key,
+            Fileobj=file_obj,
+            ExtraArgs={'ExpectedBucketOwner': get("AWS_BUCKET_OWNER")}
+        )
+        file_obj.seek(0)  # Reset pointer to beginning for reading
+        logging.info(f"Successfully downloaded {s3_key} from S3")
+        return file_obj
+    except ClientError as e:
+        error_code = e.response.get('Error', {}).get('Code', '')
+        if error_code == 'NoSuchKey':
+            logging.error(f"File not found in S3: {s3_key}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=ErrorConstants.FILE_NOT_FOUND
+            )
+        else:
+            logging.error(f"Failed to download file from S3: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=ErrorConstants.FAILED_TO_DOWNLOAD_FILE_FROM_S3
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=ErrorConstants.AN_UNEXPECTED_ERROR_OCCURRED_WHILE_DOWNLOADING_FILE
+        )
