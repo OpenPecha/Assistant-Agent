@@ -7,7 +7,7 @@ from .media_response_model import MediaUploadResponse
 from ..error_constant import ErrorConstants
 
 
-def validate_file(file: UploadFile) -> None:
+def _validate_file(file: UploadFile) -> None:
     file_extension = os.path.splitext(file.filename.lower())[1] if file.filename else ''
     if file_extension not in get("ALLOWED_EXTENSIONS"):
         raise HTTPException(
@@ -23,7 +23,7 @@ def validate_file(file: UploadFile) -> None:
         )
 
 
-def prepare_file_upload(file: UploadFile, document_path_full: str) -> tuple[str, str]:
+def _prepare_file_upload(file: UploadFile, document_path_full: str) -> tuple[str, str]:
     file_name = file.filename if file.filename else "uploaded_file"
     s3_key = f"{document_path_full}/{file_name}"
     
@@ -42,12 +42,12 @@ def prepare_file_upload(file: UploadFile, document_path_full: str) -> tuple[str,
 
 
 def upload_file_service(token: str, file: UploadFile) -> MediaUploadResponse:
-    validate_file(file)
+    _validate_file(file)
     unique_id = str(uuid.uuid4())
     path = "documents/context"
     document_path_full = f"{path}/{unique_id}"
     
-    upload_key, file_url = prepare_file_upload(
+    upload_key, file_url = _prepare_file_upload(
         file=file,
         document_path_full=document_path_full
     )
