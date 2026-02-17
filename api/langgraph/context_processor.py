@@ -32,10 +32,7 @@ def extract_text_from_txt(file_bytes: BytesIO) -> str:
 
 
 def process_file_context(file_url: str) -> str:
-    bucket_name = get("AWS_BUCKET_NAME")
-    
-    logging.info(f"Processing file context: {file_url}")
-    
+    bucket_name = get("AWS_BUCKET_NAME")    
     file_bytes = download_file_from_s3(bucket_name, file_url)
     
     if file_url.lower().endswith('.pdf'):
@@ -44,14 +41,10 @@ def process_file_context(file_url: str) -> str:
         text = extract_text_from_txt(file_bytes)
         
     elif file_url.lower().endswith(('.doc', '.docx')):
-        logging.warning(f"Word document support not implemented yet: {file_url}")
         return f"[Word document: {file_url}]"
         
     else:
-        raise ValueError(f"Unsupported file type: {file_url}")
-    
-    logging.info(f"Extracted {len(text)} characters from {file_url}")
-    
+        raise ValueError(f"Unsupported file type: {file_url}")    
     return text
 
 
@@ -82,8 +75,5 @@ def process_contexts(contexts: List[ContextRequest]) -> Optional[List[str]]:
             logging.error(error_msg)
     
     if not processed_contexts:
-        return None
-    
-    logging.info(f"Processed {len(processed_contexts)} contexts")
-    
+        return None    
     return processed_contexts

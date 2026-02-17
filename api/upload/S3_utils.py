@@ -3,7 +3,6 @@ from io import BytesIO
 import boto3
 from botocore.exceptions import ClientError
 from fastapi import UploadFile, HTTPException
-import logging
 
 from starlette import status
 
@@ -32,10 +31,8 @@ def upload_file(bucket_name: str, s3_key: str, file: UploadFile) -> str:
         )
         return s3_key
     except ClientError as e:
-        logging.error(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorConstants.FAILED_TO_UPLOAD_FILE_TO_S3)
     except Exception as e:
-        logging.error(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorConstants.AN_UNEXPECTED_ERROR_OCCURRED)
 
 
@@ -52,10 +49,8 @@ def upload_bytes(bucket_name: str, s3_key: str, file: BytesIO, content_type: str
         )
         return s3_key
     except ClientError as e:
-        logging.error(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorConstants.FAILED_TO_UPLOAD_FILE_TO_S3)
     except Exception as e:
-        logging.error(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorConstants.AN_UNEXPECTED_ERROR_OCCURRED)
 
 
@@ -96,19 +91,16 @@ def download_file_from_s3(bucket_name: str, s3_key: str) -> BytesIO:
             Fileobj=file_obj,
             ExtraArgs={'ExpectedBucketOwner': get("AWS_BUCKET_OWNER")}
         )
-        file_obj.seek(0)  # Reset pointer to beginning for reading
-        logging.info(f"Successfully downloaded {s3_key} from S3")
+        file_obj.seek(0)
         return file_obj
     except ClientError as e:
         error_code = e.response.get('Error', {}).get('Code', '')
         if error_code == 'NoSuchKey':
-            logging.error(f"File not found in S3: {s3_key}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=ErrorConstants.FILE_NOT_FOUND
             )
         else:
-            logging.error(f"Failed to download file from S3: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=ErrorConstants.FAILED_TO_DOWNLOAD_FILE_FROM_S3
