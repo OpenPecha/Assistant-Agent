@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 from io import BytesIO
 from pypdf import PdfReader
+from docx import Document
 from api.Assistant.assistant_response_model import ContextRequest
 from api.upload.S3_utils import download_file_from_s3
 from api.config import get
@@ -10,17 +11,18 @@ from api.config import get
 def extract_text_from_pdf(pdf_bytes: BytesIO) -> str:
     try:
         reader = PdfReader(pdf_bytes)
-        text = ""
-        
-        for page_num, page in enumerate(reader.pages, 1):
+        pages = []
+
+        for page in reader.pages:
             page_text = page.extract_text()
             if page_text:
-                text += f"\n--- Page {page_num} ---\n{page_text}\n"
-        
-        return text.strip()
+                pages.append(page_text.strip())
+
+        return "\n\n".join(pages).strip()
     except Exception as e:
         logging.error(f"Failed to extract text from PDF: {e}")
         raise
+
 
 
 def extract_text_from_txt(file_bytes: BytesIO) -> str:
@@ -28,6 +30,22 @@ def extract_text_from_txt(file_bytes: BytesIO) -> str:
         return file_bytes.read().decode('utf-8')
     except Exception as e:
         logging.error(f"Failed to read text file: {e}")
+        raise
+
+
+def extract_text_from_docx(file_bytes: BytesIO) -> str:
+    try:
+        doc = Document(file_bytes)
+        paragraphs = []
+        
+        for para in doc.paragraphs:
+            para_text = para.text.strip()
+            if para_text:
+                paragraphs.append(para_text)
+        
+        return "\n\n".join(paragraphs).strip()
+    except Exception as e:
+        logging.error(f"Failed to extract text from DOCX: {e}")
         raise
 
 
@@ -39,10 +57,8 @@ def process_file_context(file_url: str) -> str:
         text = extract_text_from_pdf(file_bytes)
     elif file_url.lower().endswith(('.txt', '.text')):
         text = extract_text_from_txt(file_bytes)
-        
-    elif file_url.lower().endswith(('.doc', '.docx')):
-        return f"[Word document: {file_url}]"
-        
+    elif file_url.lower().endswith(('.docx')):
+        text = extract_text_from_docx(file_bytes)
     else:
         raise ValueError(f"Unsupported file type: {file_url}")    
     return text
