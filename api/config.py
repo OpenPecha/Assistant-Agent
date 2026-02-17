@@ -25,7 +25,7 @@ DEFAULT = dict(
     MAX_FILE_SIZE_MB=10,
     CACHE_CONNECTION_STRING="your-redis-connection-string",
     CACHE_PREFIX="agent_microservice:",
-    CACHE_DEFAULT_TTL=3600,
+    CACHE_ASSISTANT_TIMEOUT=3600,
 )
 
 def get(key: str) -> str:
