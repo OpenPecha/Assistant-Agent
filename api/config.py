@@ -26,6 +26,7 @@ DEFAULT = dict(
     CACHE_CONNECTION_STRING="your-redis-connection-string",
     CACHE_PREFIX="agent_microservice:",
     CACHE_ASSISTANT_TIMEOUT=3600,
+    EXTERNAL_PECHA_API_URL="your-external-pecha-api-url",
 )
 
 def get(key: str) -> str:
