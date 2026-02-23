@@ -25,8 +25,16 @@ class AssistantInfoResponse(BaseModel):
     created_by: Optional[str] = None
     system_assistance: bool = False
 
+class AssistantListItemResponse(BaseModel):
+    id: UUID
+    name: str
+    source_type: Optional[str] = None
+    description: Optional[str] = None
+    created_by: Optional[str] = None
+    system_assistance: bool = False
+
 class AssistantResponse(BaseModel):
-    assistants: List[AssistantInfoResponse]
+    assistants: List[AssistantListItemResponse]
     skip: int
     limit: int
     total: int

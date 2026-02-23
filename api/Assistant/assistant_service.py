@@ -1,9 +1,8 @@
-
 import logging
 from api.Users.user_service import validate_and_extract_user_email
 from api.db.pg_database import SessionLocal
 from api.Assistant.assistant_repository import get_all_assistants, get_assistant_by_id_repository, delete_assistant_repository, update_assistant_repository
-from api.Assistant.assistant_response_model import AssistantRequest, AssistantResponse, AssistantInfoResponse, ContextResponse, UpdateAssistantRequest
+from api.Assistant.assistant_response_model import AssistantRequest, AssistantResponse, AssistantInfoResponse, AssistantListItemResponse, ContextResponse, UpdateAssistantRequest
 from api.Assistant.assistant_repository import create_assistant_repository
 from typing import List
 from api.Assistant.assistant_model import Assistant, Context
@@ -13,39 +12,72 @@ from fastapi import HTTPException, status
 from api.error_constant import ErrorConstants
 from api.upload.S3_utils import generate_presigned_access_url, delete_file
 from api.config import get
+from api.cache.cache_enums import CacheType
+from api.Assistant.assistant_cache_service import (
+    get_assistant_detail_cache,
+    set_assistant_detail_cache,
+    delete_assistant_detail_cache,
+)
 
 
-def get_assistants(skip: 0, limit: 20) -> List[AssistantResponse]:
+def _build_context_responses(contexts) -> List[ContextResponse]:
+    return [
+        ContextResponse(
+            id=context.id,
+            content=context.content,
+            file_url=(
+                generate_presigned_access_url(
+                    bucket_name=get("AWS_BUCKET_NAME"),
+                    s3_key=context.file_url
+                ) if context.file_url else None
+            ),
+            pecha_title=context.pecha_title,
+            pecha_text_id=context.pecha_text_id
+        ) for context in contexts
+    ]
+
+
+def _build_assistant_list_item_response(assistant) -> AssistantListItemResponse:
+    return AssistantListItemResponse(
+        id=assistant.id,
+        name=assistant.name,
+        source_type=assistant.source_type,
+        description=assistant.description,
+        created_by=assistant.created_by,
+        system_assistance=assistant.system_assistance
+    )
+
+
+def _build_assistant_info_response(assistant) -> AssistantInfoResponse:
+    return AssistantInfoResponse(
+        id=assistant.id,
+        name=assistant.name,
+        source_type=assistant.source_type,
+        description=assistant.description,
+        system_prompt=assistant.system_prompt,
+        contexts=_build_context_responses(assistant.contexts),
+        created_by=assistant.created_by,
+        system_assistance=assistant.system_assistance
+    )
+
+
+def get_assistants(skip: 0, limit: 20) -> AssistantResponse:
     with SessionLocal() as db_session:
         assistants, total = get_all_assistants(db=db_session, skip=skip, limit=limit)
-        assistants_response = [AssistantInfoResponse(
-            id=assistant.id,
-            name=assistant.name,
-            source_type=assistant.source_type,
-            description=assistant.description,
-            system_prompt=assistant.system_prompt,
-            contexts=[ContextResponse(
-                id=context.id,
-                content=context.content,
-                file_url=(
-                    generate_presigned_access_url(
-                        bucket_name=get("AWS_BUCKET_NAME"),
-                        s3_key=context.file_url
-                    ) if context.file_url else None
-                ),
-                pecha_title=context.pecha_title,
-                pecha_text_id=context.pecha_text_id
-            ) for context in assistant.contexts],
-            created_by=assistant.created_by,
-            system_assistance=assistant.system_assistance
-        ) for assistant in assistants]
+        assistants_response = [
+            _build_assistant_list_item_response(assistant)
+            for assistant in assistants
+        ]
 
-        return AssistantResponse(
+        assistant_response = AssistantResponse(
             assistants=assistants_response,
             skip=skip,
             limit=limit,
             total=total
         )
+
+    return assistant_response
+
 
 def create_assistant_service(token: str, assistant_request: AssistantRequest):
     current_user_email=validate_and_extract_user_email(token=token)
@@ -64,32 +96,28 @@ def create_assistant_service(token: str, assistant_request: AssistantRequest):
     )
         create_assistant_repository(db=db_session, assistant=assistant)
 
-def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoResponse:
+async def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoResponse:
+    cached_data = await get_assistant_detail_cache(
+        assistant_id=str(assistant_id),
+        cache_type=CacheType.ASSISTANT_DETAIL
+    )
+
+    if cached_data:
+        return cached_data
+
     with SessionLocal() as db_session:
         assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
-        return AssistantInfoResponse(
-            id=assistant.id,
-            name=assistant.name,
-            source_type=assistant.source_type,
-            description=assistant.description,
-            system_prompt=assistant.system_prompt,
-            contexts=[ContextResponse(
-                id=context.id,
-                content=context.content,
-                file_url=(
-                    generate_presigned_access_url(
-                        bucket_name=get("AWS_BUCKET_NAME"),
-                        s3_key=context.file_url
-                    ) if context.file_url else None
-                ),
-                pecha_title=context.pecha_title,
-                pecha_text_id=context.pecha_text_id
-            ) for context in assistant.contexts],
-            created_by=assistant.created_by,
-            system_assistance=assistant.system_assistance
-        )
+        assistant_info = _build_assistant_info_response(assistant)
 
-def delete_assistant_service(assistant_id: UUID, token: str):
+    await set_assistant_detail_cache(
+        assistant_id=str(assistant_id),
+        data=assistant_info,
+        cache_type=CacheType.ASSISTANT_DETAIL
+    )
+
+    return assistant_info
+
+async def delete_assistant_service(assistant_id: UUID, token: str):
     current_user_email=validate_and_extract_user_email(token=token)
     with SessionLocal() as db_session:
         assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
@@ -107,7 +135,13 @@ def delete_assistant_service(assistant_id: UUID, token: str):
         
         delete_assistant_repository(db=db_session, assistant_id=assistant_id)
 
-def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistantRequest, token: str) -> AssistantInfoResponse:
+    await delete_assistant_detail_cache(
+        assistant_id=str(assistant_id),
+        cache_type=CacheType.ASSISTANT_DETAIL
+    )
+
+
+async def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistantRequest, token: str) -> AssistantInfoResponse:
     current_user_email=validate_and_extract_user_email(token=token)
     with SessionLocal() as db_session:
         assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
@@ -135,24 +169,11 @@ def update_assistant_service(assistant_id: UUID, update_request: UpdateAssistant
         
         assistant = update_assistant_repository(db=db_session, assistant=assistant)
         
-        return AssistantInfoResponse(
-            id=assistant.id,
-            name=assistant.name,
-            source_type=assistant.source_type,
-            description=assistant.description,
-            system_prompt=assistant.system_prompt,
-            contexts=[ContextResponse(
-                id=context.id,
-                content=context.content,
-                file_url=(
-                    generate_presigned_access_url(
-                        bucket_name=get("AWS_BUCKET_NAME"),
-                        s3_key=context.file_url
-                    ) if context.file_url else None
-                ),
-                pecha_title=context.pecha_title,
-                pecha_text_id=context.pecha_text_id
-            ) for context in assistant.contexts],
-            created_by=assistant.created_by,
-            system_assistance=assistant.system_assistance
-        )
+        assistant_info = _build_assistant_info_response(assistant)
+
+    await delete_assistant_detail_cache(
+        assistant_id=str(assistant_id),
+        cache_type=CacheType.ASSISTANT_DETAIL
+    )
+
+    return assistant_info
