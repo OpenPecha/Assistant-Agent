@@ -1,9 +1,8 @@
-
 import logging
 from api.Users.user_service import validate_and_extract_user_email
 from api.db.pg_database import SessionLocal
 from api.Assistant.assistant_repository import get_all_assistants, get_assistant_by_id_repository, delete_assistant_repository, update_assistant_repository
-from api.Assistant.assistant_response_model import AssistantRequest, AssistantResponse, AssistantInfoResponse, ContextResponse, UpdateAssistantRequest
+from api.Assistant.assistant_response_model import AssistantRequest, AssistantResponse, AssistantInfoResponse, AssistantListItemResponse, ContextResponse, UpdateAssistantRequest
 from api.Assistant.assistant_repository import create_assistant_repository
 from typing import List
 from api.Assistant.assistant_model import Assistant, Context
@@ -40,6 +39,17 @@ def _build_context_responses(contexts) -> List[ContextResponse]:
     ]
 
 
+def _build_assistant_list_item_response(assistant) -> AssistantListItemResponse:
+    return AssistantListItemResponse(
+        id=assistant.id,
+        name=assistant.name,
+        source_type=assistant.source_type,
+        description=assistant.description,
+        created_by=assistant.created_by,
+        system_assistance=assistant.system_assistance
+    )
+
+
 def _build_assistant_info_response(assistant) -> AssistantInfoResponse:
     return AssistantInfoResponse(
         id=assistant.id,
@@ -66,7 +76,7 @@ async def get_assistants(skip: 0, limit: 20) -> AssistantResponse:
     with SessionLocal() as db_session:
         assistants, total = get_all_assistants(db=db_session, skip=skip, limit=limit)
         assistants_response = [
-            _build_assistant_info_response(assistant)
+            _build_assistant_list_item_response(assistant)
             for assistant in assistants
         ]
 

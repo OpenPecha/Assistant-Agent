@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 from sqlalchemy.exc import IntegrityError
 from api.Assistant.assistant_model import Assistant
 from typing import List, Tuple
@@ -8,7 +8,16 @@ import logging
 from api.error_constant import ErrorConstants
 
 def get_all_assistants(db: Session, skip: int, limit: int) -> Tuple[List[Assistant], int]:
-    db_query = db.query(Assistant)
+    db_query = db.query(Assistant).options(
+        load_only(
+            Assistant.id,
+            Assistant.name,
+            Assistant.source_type,
+            Assistant.description,
+            Assistant.created_by,
+            Assistant.system_assistance
+        )
+    )
     total = db_query.count()
     assistants = db_query.offset(skip).limit(limit).all()
     return assistants, total
