@@ -14,8 +14,6 @@ from api.upload.S3_utils import generate_presigned_access_url, delete_file
 from api.config import get
 from api.cache.cache_enums import CacheType
 from api.Assistant.assistant_cache_service import (
-    get_assistants_cache,
-    set_assistants_cache,
     get_assistant_detail_cache,
     set_assistant_detail_cache,
     delete_assistant_detail_cache,
@@ -63,16 +61,7 @@ def _build_assistant_info_response(assistant) -> AssistantInfoResponse:
     )
 
 
-async def get_assistants(skip: 0, limit: 20) -> AssistantResponse:
-    cached_data = await get_assistants_cache(
-        skip=skip,
-        limit=limit,
-        cache_type=CacheType.ASSISTANTS
-    )
-
-    if cached_data:
-        return cached_data
-
+def get_assistants(skip: 0, limit: 20) -> AssistantResponse:
     with SessionLocal() as db_session:
         assistants, total = get_all_assistants(db=db_session, skip=skip, limit=limit)
         assistants_response = [
@@ -86,13 +75,6 @@ async def get_assistants(skip: 0, limit: 20) -> AssistantResponse:
             limit=limit,
             total=total
         )
-
-    await set_assistants_cache(
-        skip=skip,
-        limit=limit,
-        data=assistant_response,
-        cache_type=CacheType.ASSISTANTS
-    )
 
     return assistant_response
 

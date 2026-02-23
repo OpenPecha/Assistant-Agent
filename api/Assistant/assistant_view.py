@@ -18,7 +18,7 @@ assistant_router=APIRouter(
 async def get_all_assistants(   
     skip: int = Query(default=0),
     limit: int = Query(default=10))  -> AssistantResponse:
-    return await get_assistants(skip=skip, limit=limit)
+    return get_assistants(skip=skip, limit=limit)
 
 @assistant_router.post("", status_code=status.HTTP_201_CREATED)
 async def create_assistant(assistant_request: AssistantRequest, authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]):
