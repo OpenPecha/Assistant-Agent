@@ -359,6 +359,12 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
   font-size:10px;font-weight:600;margin-right:6px;
   background:rgba(159,122,234,0.15);color:var(--accent-purple);
 }
+.title-lang-item{
+  margin-bottom:4px;
+}
+.title-lang-item:last-child{
+  margin-bottom:0;
+}
 .ctx-search-no-results{
   padding:12px;text-align:center;font-size:12px;color:var(--text-muted);
 }
@@ -854,7 +860,12 @@ function openEditModal() {
       let type = 'content';
       if (c.pecha_text_id) type = 'search';
       else if (c.file_url) type = 'file';
-      addContextEntry(type, {content: c.content, file_url: c.file_url, pecha_title: c.pecha_title, pecha_text_id: c.pecha_text_id});
+      addContextEntry(type, {
+        content: c.content,
+        file_url: c.file_url,
+        pecha_title: c.pecha_title,
+        pecha_text_id: c.pecha_text_id
+      });
     });
   }
   document.getElementById('modalOverlay').classList.add('active');
@@ -920,6 +931,20 @@ function addContextEntry(type='content', data={}) {
     renderFileField(fieldArea, data.file_url || '');
   } else if (selectedType === 'search') {
     renderSearchField(fieldArea, data.pecha_title || '', data.pecha_text_id || '');
+    // If editing and has content, create a mock search result with the content
+    if (data.content && data.pecha_title && data.pecha_text_id) {
+      const contentDataScript = document.createElement('script');
+      contentDataScript.type = 'application/json';
+      contentDataScript.className = 'ctx-pecha-content-data';
+      // Create a single item array with the content
+      contentDataScript.textContent = JSON.stringify([{
+        id: data.pecha_text_id,
+        content: data.content,
+        type: 'text',
+        source: 'pecha'
+      }]);
+      fieldArea.appendChild(contentDataScript);
+    }
   }
 }
 
@@ -1026,7 +1051,7 @@ function renderSearchField(container, title, textId) {
   `;
   if (title && textId) {
     const tagsDiv = container.querySelector('.pecha-tags');
-    addPechaTag(tagsDiv, container, title, textId);
+    addPechaTag(tagsDiv, container, title, textId, null);
   }
 }
 
@@ -1044,24 +1069,19 @@ async function doContextSearch(inputEl) {
   resultsDiv.innerHTML = '<div class="ctx-search-no-results"><span class="spinner"></span> Searching...</div>';
 
   try {
-    const r = await fetch('https://search.buddhistai.tools/search', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({limit:10, query:query, return_text:true, search_type:'exact'})
-    });
+    const r = await fetch('https://api-aq25662yyq-uc.a.run.app/v2/texts?limit=20&offset=0&title=' + encodeURIComponent(query));
     if (!r.ok) throw new Error('Search failed');
-    const data = await r.json();
-    const results = data.results || [];
+    const results = await r.json();
     if (!results.length) {
       resultsDiv.innerHTML = '<div class="ctx-search-no-results">No results found</div>';
     } else {
-      results.forEach(item => { _searchResultsCache[item.id] = item.entity?.text || ''; });
       resultsDiv.innerHTML = results.map(item => {
-        const text = item.entity?.text || '';
-        const lang = item.entity?.language || '';
-        const displayText = text.length > 150 ? text.slice(0,150) + '...' : text;
+        const title = item.title || {};
+        const titleTexts = Object.entries(title).map(([lang, text]) => 
+          '<div class="title-lang-item"><span class="result-lang">' + esc(lang) + '</span>: ' + esc(text.length > 100 ? text.slice(0,100) + '...' : text) + '</div>'
+        ).join('');
         return '<div class="ctx-search-result-item" data-result-id="' + esc(item.id) + '" onclick="selectSearchResult(this)">'
-          + '<span class="result-lang">' + esc(lang) + '</span>' + esc(displayText)
+          + titleTexts
           + '</div>';
       }).join('');
     }
@@ -1073,9 +1093,8 @@ async function doContextSearch(inputEl) {
   }
 }
 
-function selectSearchResult(el) {
+async function selectSearchResult(el) {
   const id = el.getAttribute('data-result-id');
-  const fullText = _searchResultsCache[id] || '';
   const entry = el.closest('.context-entry');
   const fieldArea = entry.querySelector('.ctx-field-area');
   const tagsDiv = fieldArea.querySelector('.pecha-tags');
@@ -1083,19 +1102,80 @@ function selectSearchResult(el) {
   const idInput = fieldArea.querySelector('.ctx-pecha-text-id');
   const resultsDiv = entry.querySelector('.ctx-search-results');
 
-  const displayTitle = fullText.length > 80 ? fullText.slice(0,80) + '...' : fullText;
-  titleInput.value = displayTitle;
-  idInput.value = id;
-  resultsDiv.style.display = 'none';
-
-  tagsDiv.innerHTML = '';
-  addPechaTag(tagsDiv, fieldArea, displayTitle, id);
+  const titleText = el.textContent.trim();
+  const displayTitle = titleText.length > 80 ? titleText.slice(0,80) + '...' : titleText;
+  
+  // Show loading state
+  el.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Loading content...';
+  el.style.pointerEvents = 'none';
+  
+  try {
+    // Call the search endpoint to fetch content
+    const r = await fetch(API_BASE + '/search/' + encodeURIComponent(id));
+    if (!r.ok) throw new Error('Failed to fetch content');
+    const searchData = await r.json();
+    
+    // Store both the title and the fetched content
+    titleInput.value = displayTitle;
+    idInput.value = id;
+    
+    // Store content data as JSON in a script tag to avoid HTML escaping issues
+    let contentScript = fieldArea.querySelector('.ctx-pecha-content-data');
+    if (!contentScript) {
+      contentScript = document.createElement('script');
+      contentScript.type = 'application/json';
+      contentScript.className = 'ctx-pecha-content-data';
+      fieldArea.appendChild(contentScript);
+    }
+    contentScript.textContent = JSON.stringify(searchData || []);
+    
+    resultsDiv.style.display = 'none';
+    tagsDiv.innerHTML = '';
+    addPechaTag(tagsDiv, fieldArea, displayTitle, id, searchData);
+    
+    toast('Content loaded successfully! (' + (searchData?.length || 0) + ' items)', 'success');
+  } catch(e) {
+    toast('Error loading content: ' + e.message, 'error');
+    el.innerHTML = displayTitle;
+    el.style.pointerEvents = '';
+  }
 }
 
-function addPechaTag(tagsDiv, fieldArea, title, id) {
-  const tag = document.createElement('span');
-  tag.className = 'pecha-tag';
-  tag.innerHTML = `<span class="pecha-tag-text">${esc(title)}</span><button class="pecha-tag-remove" onclick="removePechaTag(this)">&times;</button>`;
+function addPechaTag(tagsDiv, fieldArea, title, id, searchData) {
+  const tag = document.createElement('div');
+  tag.style.cssText = 'margin-top:8px';
+  
+  // Add main tag
+  tag.innerHTML = `
+    <div class="pecha-tag">
+      <span class="pecha-tag-text">${esc(title)}</span>
+      <button class="pecha-tag-remove" onclick="removePechaTag(this)">&times;</button>
+    </div>
+  `;
+  
+  // If we have search data, show the content items
+  if (searchData && searchData.length > 0) {
+    const contentList = document.createElement('div');
+    contentList.style.cssText = 'margin-top:8px;display:flex;flex-direction:column;gap:8px';
+    
+    searchData.forEach((item, idx) => {
+      const contentPreview = (item.content || '').substring(0, 150);
+      const itemDiv = document.createElement('div');
+      itemDiv.style.cssText = 'padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:12px';
+      itemDiv.innerHTML = `
+        <div style="font-weight:600;color:var(--accent-purple);margin-bottom:4px">
+          ${esc(item.type || 'Content')} - ${esc(item.source || 'Unknown')}
+        </div>
+        <div style="color:var(--text-secondary);line-height:1.5">
+          ${esc(contentPreview)}${contentPreview.length >= 150 ? '...' : ''}
+        </div>
+      `;
+      contentList.appendChild(itemDiv);
+    });
+    
+    tag.appendChild(contentList);
+  }
+  
   tagsDiv.appendChild(tag);
 }
 
@@ -1104,7 +1184,18 @@ function removePechaTag(btn) {
   const fieldArea = entry.querySelector('.ctx-field-area');
   fieldArea.querySelector('.ctx-pecha-title').value = '';
   fieldArea.querySelector('.ctx-pecha-text-id').value = '';
-  btn.closest('.pecha-tag').remove();
+  
+  // Remove the content data script if it exists
+  const contentDataScript = fieldArea.querySelector('.ctx-pecha-content-data');
+  if (contentDataScript) {
+    contentDataScript.remove();
+  }
+  
+  // Clear the pecha tags div
+  const tagsDiv = fieldArea.querySelector('.pecha-tags');
+  if (tagsDiv) {
+    tagsDiv.innerHTML = '';
+  }
 }
 
 function getContextsFromForm() {
@@ -1121,7 +1212,39 @@ function getContextsFromForm() {
     } else if (type === 'search') {
       const pecha_title = e.querySelector('.ctx-pecha-title')?.value.trim();
       const pecha_text_id = e.querySelector('.ctx-pecha-text-id')?.value.trim();
-      if (pecha_title && pecha_text_id) contexts.push({content:null, file_url:null, pecha_title, pecha_text_id});
+      const contentDataScript = e.querySelector('.ctx-pecha-content-data');
+      
+      if (pecha_title && pecha_text_id) {
+        // Parse the stored JSON data
+        let searchData = [];
+        if (contentDataScript) {
+          try {
+            searchData = JSON.parse(contentDataScript.textContent || '[]');
+          } catch(err) {
+            console.error('Failed to parse search data', err);
+          }
+        }
+        
+        // Create separate context entries for each search result
+        if (searchData.length > 0) {
+          searchData.forEach(item => {
+            contexts.push({
+              content: item.content || null,
+              file_url: null,
+              pecha_title: pecha_title,
+              pecha_text_id: pecha_text_id
+            });
+          });
+        } else {
+          // No content loaded yet, just store the metadata
+          contexts.push({
+            content: null,
+            file_url: null,
+            pecha_title: pecha_title,
+            pecha_text_id: pecha_text_id
+          });
+        }
+      }
     }
   });
   return contexts;
