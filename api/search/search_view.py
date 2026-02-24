@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
-from fastapi.security import HTTPBearer
 from starlette import status
 from api.search.search_service import get_search_texts_details
 from api.search.search_response_model import SearchTextsDetailsResponse
