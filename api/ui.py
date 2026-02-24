@@ -1163,9 +1163,6 @@ function addPechaTag(tagsDiv, fieldArea, title, id, searchData) {
       const itemDiv = document.createElement('div');
       itemDiv.style.cssText = 'padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:12px';
       itemDiv.innerHTML = `
-        <div style="font-weight:600;color:var(--accent-purple);margin-bottom:4px">
-          ${esc(item.type || 'Content')} - ${esc(item.source || 'Unknown')}
-        </div>
         <div style="color:var(--text-secondary);line-height:1.5">
           ${esc(contentPreview)}${contentPreview.length >= 150 ? '...' : ''}
         </div>
