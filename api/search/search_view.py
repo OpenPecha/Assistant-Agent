@@ -6,8 +6,6 @@ from starlette import status
 from api.search.search_service import get_search_texts_details
 from api.search.search_response_model import SearchTextsDetailsResponse
 
-
-oauth2_scheme = HTTPBearer()
 search_router = APIRouter(
     prefix="/search",
     tags=["search"]
