@@ -14,7 +14,7 @@ search_router = APIRouter(
 )
 
 
-@search_router.get("/texts/{text_id}", status_code=status.HTTP_200_OK, response_model=SearchTextsDetailsResponse)
+@search_router.get("/{text_id}", status_code=status.HTTP_200_OK, response_model=SearchTextsDetailsResponse)
 async def read_texts_details(
         text_id: str
 )->SearchTextsDetailsResponse:
