@@ -1,4 +1,3 @@
-import logging
 from api.Users.user_service import validate_and_extract_user_email
 from api.db.pg_database import SessionLocal
 from api.Assistant.assistant_repository import get_all_assistants, get_assistant_by_id_repository, delete_assistant_repository, update_assistant_repository
@@ -8,16 +7,15 @@ from typing import List
 from api.Assistant.assistant_model import Assistant, Context
 from uuid import UUID
 from datetime import datetime, timezone
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
 from api.error_constant import ErrorConstants
-from api.upload.S3_utils import generate_presigned_access_url, delete_file
-from api.config import get
 from api.cache.cache_enums import CacheType
 from api.Assistant.assistant_cache_service import (
     get_assistant_detail_cache,
     set_assistant_detail_cache,
     delete_assistant_detail_cache,
 )
+from api.langgraph.context_processor import validate_file, extract_content_from_file
 
 
 def _build_context_responses(contexts) -> List[ContextResponse]:
@@ -25,12 +23,6 @@ def _build_context_responses(contexts) -> List[ContextResponse]:
         ContextResponse(
             id=context.id,
             content=context.content,
-            file_url=(
-                generate_presigned_access_url(
-                    bucket_name=get("AWS_BUCKET_NAME"),
-                    s3_key=context.file_url
-                ) if context.file_url else None
-            ),
             pecha_title=context.pecha_title,
             pecha_text_id=context.pecha_text_id
         ) for context in contexts
@@ -79,21 +71,37 @@ def get_assistants(skip: 0, limit: 20) -> AssistantResponse:
     return assistant_response
 
 
-def create_assistant_service(token: str, assistant_request: AssistantRequest):
-    current_user_email=validate_and_extract_user_email(token=token)
+async def create_assistant_service(token: str, assistant_request: AssistantRequest, files: List[UploadFile] = None):
+    current_user_email = validate_and_extract_user_email(token=token)
+    
+    contexts_list = []
+    
+    for ctx in assistant_request.contexts:
+        contexts_list.append(
+            Context(content=ctx.content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
+        )
+    
+    if files:
+        for file in files:
+            if file.filename:
+                file_bytes = await file.read()
+                try:
+                    validate_file(file.filename, len(file_bytes))
+                    extracted_content = extract_content_from_file(file_bytes, file.filename)
+                    contexts_list.append(Context(content=extracted_content))
+                except ValueError as e:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
     with SessionLocal() as db_session:
         assistant = Assistant(
-        name=assistant_request.name,
-        source_type=assistant_request.source_type,
-        description=assistant_request.description,
-        system_prompt=assistant_request.system_prompt,
-        system_assistance=assistant_request.system_assistance,
-        created_by=current_user_email,
-        contexts=[
-            Context(content=ctx.content, file_url=ctx.file_url, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
-            for ctx in assistant_request.contexts
-        ]
-    )
+            name=assistant_request.name,
+            source_type=assistant_request.source_type,
+            description=assistant_request.description,
+            system_prompt=assistant_request.system_prompt,
+            system_assistance=assistant_request.system_assistance,
+            created_by=current_user_email,
+            contexts=contexts_list
+        )
         create_assistant_repository(db=db_session, assistant=assistant)
 
 async def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoResponse:
@@ -118,20 +126,13 @@ async def get_assistant_by_id_service(assistant_id: UUID) -> AssistantInfoRespon
     return assistant_info
 
 async def delete_assistant_service(assistant_id: UUID, token: str):
-    current_user_email=validate_and_extract_user_email(token=token)
+    current_user_email = validate_and_extract_user_email(token=token)
     with SessionLocal() as db_session:
         assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
         if current_user_email != assistant.created_by:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ErrorConstants.UNAUTHORIZED_ERROR_MESSAGE)
         if assistant.system_assistance:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ErrorConstants.FORBIDDEN_ERROR_MESSAGE)
-        
-        for context in assistant.contexts:
-            if context.file_url:
-                try:
-                    delete_file(context.file_url)
-                except Exception as e:
-                    logging.error(f"Failed to delete S3 file {context.file_url}: {str(e)}")
         
         delete_assistant_repository(db=db_session, assistant_id=assistant_id)
 
@@ -161,7 +162,7 @@ async def update_assistant_service(assistant_id: UUID, update_request: UpdateAss
             for context in assistant.contexts:
                 db_session.delete(context)
             assistant.contexts = [
-                Context(content=ctx.content, file_url=ctx.file_url, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
+                Context(content=ctx.content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
                 for ctx in update_request.contexts
             ]
         

@@ -4,14 +4,12 @@ from typing import List, Optional
 
 class ContextRequest(BaseModel):
     content: Optional[str] = None
-    file_url: Optional[str] = None
     pecha_title: Optional[str] = None
     pecha_text_id: Optional[str] = None
 
 class ContextResponse(BaseModel):
     id: UUID
     content: Optional[str] = None
-    file_url: Optional[str] = None
     pecha_title: Optional[str] = None
     pecha_text_id: Optional[str] = None
 

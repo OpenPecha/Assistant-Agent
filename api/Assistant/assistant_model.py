@@ -28,7 +28,6 @@ class Context(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     content=Column(Text,nullable=True)
-    file_url=Column(Text,nullable=True)
     pecha_title = Column(String(255), nullable=True)
     pecha_text_id = Column(String(255), nullable=True)
     assistant_id = Column(UUID(as_uuid=True),ForeignKey("assistant.id", ondelete="CASCADE"),nullable=False)

@@ -1,12 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File, Form
 from starlette import status
 from api.Assistant.assistant_response_model import AssistantResponse, AssistantRequest, AssistantInfoResponse, UpdateAssistantRequest
 from fastapi import Query, Depends
 from api.Assistant.assistant_service import create_assistant_service, get_assistant_by_id_service, get_assistants, delete_assistant_service, update_assistant_service
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Annotated
+from typing import Annotated, Optional, List
 from uuid import UUID
 from api.constant import Constant
+import json
 oauth2_scheme = HTTPBearer()
 
 assistant_router=APIRouter(
@@ -21,8 +22,30 @@ async def get_all_assistants(
     return get_assistants(skip=skip, limit=limit)
 
 @assistant_router.post("", status_code=status.HTTP_201_CREATED)
-async def create_assistant(assistant_request: AssistantRequest, authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]):
-    create_assistant_service(token=authentication_credential.credentials, assistant_request=assistant_request)
+async def create_assistant(
+    authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
+    name: str = Form(...),
+    system_prompt: str = Form(...),
+    source_type: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    system_assistance: bool = Form(False),
+    contexts: Optional[str] = Form(None),
+    files: List[UploadFile] = File(default=[])
+):
+    contexts_data = json.loads(contexts) if contexts else []
+    assistant_request = AssistantRequest(
+        name=name,
+        source_type=source_type,
+        description=description,
+        system_prompt=system_prompt,
+        contexts=contexts_data,
+        system_assistance=system_assistance
+    )
+    await create_assistant_service(
+        token=authentication_credential.credentials,
+        assistant_request=assistant_request,
+        files=files
+    )
     return {"message": Constant.CREATED_ASSISTANT_MESSAGE}
 
 @assistant_router.get("/{assistant_id}", status_code=status.HTTP_200_OK)

@@ -4,8 +4,10 @@ from io import BytesIO
 from pypdf import PdfReader
 from docx import Document
 from api.Assistant.assistant_response_model import ContextRequest
-from api.upload.S3_utils import download_file_from_s3
-from api.config import get
+
+ALLOWED_FILE_EXTENSIONS = {'.pdf', '.txt', '.text', '.docx'}
+MAX_FILE_SIZE_MB = 10
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 
 def extract_text_from_pdf(pdf_bytes: BytesIO) -> str:
@@ -49,19 +51,28 @@ def extract_text_from_docx(file_bytes: BytesIO) -> str:
         raise
 
 
-def process_file_context(file_url: str) -> str:
-    bucket_name = get("AWS_BUCKET_NAME")    
-    file_bytes = download_file_from_s3(bucket_name, file_url)
+def validate_file(filename: str, file_size: int) -> None:
+    import os
+    ext = os.path.splitext(filename.lower())[1]
+    if ext not in ALLOWED_FILE_EXTENSIONS:
+        raise ValueError(f"Unsupported file type: {ext}. Allowed types: {', '.join(ALLOWED_FILE_EXTENSIONS)}")
     
-    if file_url.lower().endswith('.pdf'):
-        text = extract_text_from_pdf(file_bytes)
-    elif file_url.lower().endswith(('.txt', '.text')):
-        text = extract_text_from_txt(file_bytes)
-    elif file_url.lower().endswith(('.docx')):
-        text = extract_text_from_docx(file_bytes)
+    if file_size > MAX_FILE_SIZE_BYTES:
+        raise ValueError(f"File size exceeds {MAX_FILE_SIZE_MB}MB limit")
+
+
+def extract_content_from_file(file_bytes: bytes, filename: str) -> str:
+    file_stream = BytesIO(file_bytes)
+    filename_lower = filename.lower()
+    
+    if filename_lower.endswith('.pdf'):
+        return extract_text_from_pdf(file_stream)
+    elif filename_lower.endswith(('.txt', '.text')):
+        return extract_text_from_txt(file_stream)
+    elif filename_lower.endswith('.docx'):
+        return extract_text_from_docx(file_stream)
     else:
-        raise ValueError(f"Unsupported file type: {file_url}")    
-    return text
+        raise ValueError(f"Unsupported file type: {filename}")
 
 
 def process_contexts(contexts: List[ContextRequest]) -> Optional[List[str]]:
@@ -74,10 +85,6 @@ def process_contexts(contexts: List[ContextRequest]) -> Optional[List[str]]:
         try:
             if ctx.content:
                 processed_contexts.append(ctx.content)
-            
-            elif ctx.file_url:
-                file_text = process_file_context(ctx.file_url)
-                processed_contexts.append(file_text)
             
             elif ctx.pecha_title and ctx.pecha_text_id:
                 pecha_context = f"[Pecha: {ctx.pecha_title}, ID: {ctx.pecha_text_id}]"
