@@ -608,7 +608,7 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
         <select class="ctx-type-select" id="globalContextTypeSelect" onchange="addContextFromGlobal()" style="margin-bottom:12px">
           <option value="">-- Select context type --</option>
           <option value="content">Content</option>
-          <option value="file">File URL</option>
+          <option value="file">File Upload (.pdf, .docx, .txt)</option>
           <option value="search">Search Pecha</option>
         </select>
         <div class="context-list" id="contextList"></div>
@@ -819,8 +819,7 @@ function showAssistantView() {
   if (activeAssistant.contexts && activeAssistant.contexts.length) {
     ctxDiv.innerHTML = activeAssistant.contexts.map((c,i) => {
       if (c.pecha_title) return `<span class="context-chip">Pecha: ${esc(c.pecha_title)}</span>`;
-      if (c.content) return `<span class="context-chip">Text #${i+1}</span>`;
-      if (c.file_url) return `<span class="context-chip">File: ${esc(c.file_url)}</span>`;
+      if (c.content) return `<span class="context-chip">Context #${i+1}</span>`;
       return `<span class="context-chip">Context #${i+1}</span>`;
     }).join('');
   } else {
@@ -859,10 +858,8 @@ function openEditModal() {
     activeAssistant.contexts.forEach(c => {
       let type = 'content';
       if (c.pecha_text_id) type = 'search';
-      else if (c.file_url) type = 'file';
       addContextEntry(type, {
         content: c.content,
-        file_url: c.file_url,
         pecha_title: c.pecha_title,
         pecha_text_id: c.pecha_text_id
       });
@@ -906,7 +903,6 @@ function addContextEntry(type='content', data={}) {
 
   let selectedType = type;
   if (data.pecha_text_id) selectedType = 'search';
-  else if (data.file_url) selectedType = 'file';
   else if (data.content) selectedType = 'content';
 
   // Store type as data attribute for retrieval
@@ -914,7 +910,7 @@ function addContextEntry(type='content', data={}) {
 
   // Add type label and remove button only
   let typeLabel = 'Content';
-  if (selectedType === 'file') typeLabel = 'File URL';
+  if (selectedType === 'file') typeLabel = 'File Upload';
   else if (selectedType === 'search') typeLabel = 'Search Pecha';
 
   div.innerHTML = `
@@ -928,7 +924,7 @@ function addContextEntry(type='content', data={}) {
   if (selectedType === 'content') {
     renderContentField(fieldArea, data.content || '');
   } else if (selectedType === 'file') {
-    renderFileField(fieldArea, data.file_url || '');
+    renderFileField(fieldArea, '');
   } else if (selectedType === 'search') {
     renderSearchField(fieldArea, data.pecha_title || '', data.pecha_text_id || '');
     // If editing and has content, create a mock search result with the content
@@ -954,82 +950,71 @@ function renderContentField(container, value) {
   `;
 }
 
-function renderFileField(container, value) {
-  const hasFile = value && value.trim();
+function renderFileField(container, fileName) {
+  const hasFile = fileName && fileName.trim();
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px">
+      <input type="file" class="ctx-file-input" accept=".pdf,.docx,.txt" onchange="handleFileSelect(this)" style="display:none"/>
       ${hasFile ? `
         <div style="padding:8px 10px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-xs);font-size:12px;display:flex;align-items:center;justify-content:space-between">
-          <span style="color:var(--accent-green);font-weight:500">✓ File uploaded</span>
+          <span style="color:var(--accent-green);font-weight:500">✓ ${esc(fileName)}</span>
           <button class="btn-sm btn-danger" onclick="clearUploadedFile(this)" style="padding:4px 10px;font-size:11px">Remove</button>
         </div>
       ` : `
         <div style="position:relative">
-          <input type="file" class="ctx-file-input" accept=".pdf,.docx,.txt,.doc" onchange="handleFileSelect(this)" style="display:none"/>
-          <button class="ctx-file-btn" onclick="this.previousElementSibling.click()" style="width:100%;padding:10px;background:var(--bg-input);color:var(--text-secondary);border:1px dashed var(--border);border-radius:var(--radius-xs);font-size:13px;cursor:pointer;transition:var(--transition)">
-            Choose file (.pdf, .docx, .txt, .doc)
+          <button class="ctx-file-btn" onclick="this.closest('.ctx-field-area').querySelector('.ctx-file-input').click()" style="width:100%;padding:10px;background:var(--bg-input);color:var(--text-secondary);border:1px dashed var(--border);border-radius:var(--radius-xs);font-size:13px;cursor:pointer;transition:var(--transition)">
+            Choose file (.pdf, .docx, .txt)
           </button>
         </div>
-        <div class="ctx-file-status" style="font-size:11px;color:var(--text-muted);min-height:16px"></div>
+        <div class="ctx-file-status" style="font-size:11px;color:var(--text-muted);min-height:16px">Max 10MB</div>
       `}
-      <input type="hidden" class="ctx-file-url" value="${esc(value)}"/>
+      <input type="hidden" class="ctx-file-name" value="${esc(fileName || '')}"/>
     </div>
   `;
 }
 
-async function handleFileSelect(inputEl) {
+function handleFileSelect(inputEl) {
   const file = inputEl.files?.[0];
   if (!file) return;
 
-  const token = getToken();
-  if (!token) {
-    toast('Please enter a bearer token first', 'error');
+  const entry = inputEl.closest('.context-entry');
+  const statusDiv = entry.querySelector('.ctx-file-status');
+  const hiddenNameInput = entry.querySelector('.ctx-file-name');
+
+  // Validate file type
+  const allowedTypes = ['.pdf', '.docx', '.txt'];
+  const fileName = file.name.toLowerCase();
+  const isAllowed = allowedTypes.some(ext => fileName.endsWith(ext));
+  if (!isAllowed) {
+    if (statusDiv) statusDiv.innerHTML = '<span style="color:#fc8181">Invalid file type. Allowed: .pdf, .docx, .txt</span>';
     inputEl.value = '';
     return;
   }
 
-  const entry = inputEl.closest('.context-entry');
-  const statusDiv = entry.querySelector('.ctx-file-status');
-  const fileBtn = entry.querySelector('.ctx-file-btn');
-  const hiddenUrlInput = entry.querySelector('.ctx-file-url');
-
-  // Show uploading status
-  if (statusDiv) statusDiv.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Uploading...';
-  if (fileBtn) fileBtn.disabled = true;
-
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const r = await fetch(API_BASE + '/media/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + token
-      },
-      body: formData
-    });
-
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({}));
-      throw new Error(err.detail?.message || err.detail || 'Upload failed');
-    }
-
-    const data = await r.json();
-    
-    // Store the S3 key (not the temporary presigned URL)
-    hiddenUrlInput.value = data.key;
-
-    // Re-render the field to show success state
-    const fieldArea = entry.querySelector('.ctx-field-area');
-    renderFileField(fieldArea, data.key);
-
-    toast('File uploaded successfully!', 'success');
-  } catch (e) {
-    if (statusDiv) statusDiv.innerHTML = '<span style="color:#fc8181">Upload failed: ' + esc(e.message) + '</span>';
-    if (fileBtn) fileBtn.disabled = false;
-    toast('Upload error: ' + e.message, 'error');
+  // Validate file size (10MB max)
+  const maxSize = 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    if (statusDiv) statusDiv.innerHTML = '<span style="color:#fc8181">File too large. Max 10MB allowed.</span>';
     inputEl.value = '';
+    return;
   }
+
+  // Store the file name and keep the file input for later submission
+  hiddenNameInput.value = file.name;
+  
+  // Re-render the field to show success state
+  const fieldArea = entry.querySelector('.ctx-field-area');
+  renderFileField(fieldArea, file.name);
+  
+  // Re-attach the file to the new input element
+  const newFileInput = fieldArea.querySelector('.ctx-file-input');
+  if (newFileInput) {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    newFileInput.files = dataTransfer.files;
+  }
+
+  toast('File selected: ' + file.name, 'success');
 }
 
 function clearUploadedFile(btn) {
@@ -1202,10 +1187,7 @@ function getContextsFromForm() {
     const type = e.getAttribute('data-context-type');
     if (type === 'content') {
       const content = e.querySelector('.ctx-content')?.value.trim();
-      if (content) contexts.push({content, file_url:null, pecha_title:null, pecha_text_id:null});
-    } else if (type === 'file') {
-      const file_url = e.querySelector('.ctx-file-url')?.value.trim();
-      if (file_url) contexts.push({content:null, file_url, pecha_title:null, pecha_text_id:null});
+      if (content) contexts.push({content, pecha_title:null, pecha_text_id:null});
     } else if (type === 'search') {
       const pecha_title = e.querySelector('.ctx-pecha-title')?.value.trim();
       const pecha_text_id = e.querySelector('.ctx-pecha-text-id')?.value.trim();
@@ -1227,7 +1209,6 @@ function getContextsFromForm() {
           searchData.forEach(item => {
             contexts.push({
               content: item.content || null,
-              file_url: null,
               pecha_title: pecha_title,
               pecha_text_id: pecha_text_id
             });
@@ -1236,15 +1217,30 @@ function getContextsFromForm() {
           // No content loaded yet, just store the metadata
           contexts.push({
             content: null,
-            file_url: null,
             pecha_title: pecha_title,
             pecha_text_id: pecha_text_id
           });
         }
       }
     }
+    // Note: 'file' type contexts are handled separately via getFilesFromForm()
   });
   return contexts;
+}
+
+function getFilesFromForm() {
+  const entries = document.querySelectorAll('#contextList .context-entry');
+  const files = [];
+  entries.forEach(e => {
+    const type = e.getAttribute('data-context-type');
+    if (type === 'file') {
+      const fileInput = e.querySelector('.ctx-file-input');
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        files.push(fileInput.files[0]);
+      }
+    }
+  });
+  return files;
 }
 
 async function submitModal() {
@@ -1254,23 +1250,44 @@ async function submitModal() {
   const system_prompt = document.getElementById('formSystemPrompt').value.trim();
   if (!name || !system_prompt) { toast('Name and System Prompt are required','error'); return; }
 
-  const body = {
-    name,
-    description: document.getElementById('formDescription').value.trim() || null,
-    source_type: document.getElementById('formSourceType').value.trim() || null,
-    system_prompt,
-    system_assistance: document.getElementById('formSystemAssistance').checked,
-    contexts: getContextsFromForm()
-  };
+  const contextsData = getContextsFromForm();
+  const files = getFilesFromForm();
 
   try {
     let r;
     if (editingId) {
+      // For editing, use JSON (files already extracted, just updating text contexts)
+      const body = {
+        name,
+        description: document.getElementById('formDescription').value.trim() || null,
+        source_type: document.getElementById('formSourceType').value.trim() || null,
+        system_prompt,
+        system_assistance: document.getElementById('formSystemAssistance').checked,
+        contexts: contextsData
+      };
       r = await fetch(API_BASE + '/assistant/' + editingId, {method:'PUT', headers:authHeaders(), body:JSON.stringify(body)});
     } else {
-      r = await fetch(API_BASE + '/assistant', {method:'POST', headers:authHeaders(), body:JSON.stringify(body)});
+      // For creating, use FormData to include files
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('system_prompt', system_prompt);
+      formData.append('description', document.getElementById('formDescription').value.trim() || '');
+      formData.append('source_type', document.getElementById('formSourceType').value.trim() || '');
+      formData.append('system_assistance', document.getElementById('formSystemAssistance').checked);
+      formData.append('contexts', JSON.stringify(contextsData));
+      
+      // Add files
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+
+      r = await fetch(API_BASE + '/assistant', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData
+      });
     }
-    if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err.detail?.message || 'Request failed'); }
+    if (!r.ok) { const err = await r.json().catch(()=>({})); throw new Error(err.detail?.message || err.detail || 'Request failed'); }
     toast(editingId ? 'Assistant updated!' : 'Assistant created!', 'success');
     closeModal();
     await loadAssistants();
