@@ -9,6 +9,8 @@ from api.Assistant.assistant_model import Assistant, Context
 from uuid import UUID
 from datetime import datetime, timezone
 from fastapi import HTTPException, status, UploadFile
+from api.config import get
+from api.llm.token_counter import TokenCounter
 from api.error_constant import ErrorConstants
 from api.cache.cache_enums import CacheType
 from api.Assistant.assistant_cache_service import (
@@ -17,6 +19,8 @@ from api.Assistant.assistant_cache_service import (
     delete_assistant_detail_cache,
 )
 from api.utils import Utils
+
+token_counter = TokenCounter(api_key=get("GEMINI_API_KEY"))
 
 
 def _build_context_responses(contexts) -> List[ContextResponse]:
@@ -81,8 +85,9 @@ async def create_assistant_service(token: str, assistant_request: AssistantReque
             content = "\n\n".join([detail.content for detail in search_details]) if search_details else ""
         else:
             content = ctx.content
+        token_count = token_counter.count_tokens(content)
         contexts_list.append(
-            Context(content=content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
+            Context(content=content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id, token_count=token_count)
         )
     if files:
         for file in files:
@@ -91,7 +96,8 @@ async def create_assistant_service(token: str, assistant_request: AssistantReque
                 try:
                     Utils.validate_file(file.filename, len(file_bytes))
                     extracted_content = Utils.extract_content_from_file(file_bytes, file.filename)
-                    contexts_list.append(Context(content=extracted_content))
+                    file_token_count = token_counter.count_tokens(extracted_content)
+                    contexts_list.append(Context(content=extracted_content, token_count=file_token_count))
                 except ValueError as e:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     
@@ -171,8 +177,9 @@ async def update_assistant_service(assistant_id: UUID, update_request: UpdateAss
                     content = "\n\n".join([detail.content for detail in search_details]) if search_details else ""
                 else:
                     content = ctx.content
+                token_count = token_counter.count_tokens(content)
                 new_contexts.append(
-                    Context(content=content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
+                    Context(content=content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id, token_count=token_count)
                 )
             assistant.contexts = new_contexts
         
