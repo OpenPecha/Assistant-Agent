@@ -2,6 +2,7 @@ from api.Users.user_service import validate_and_extract_user_email
 from api.db.pg_database import SessionLocal
 from api.Assistant.assistant_repository import get_all_assistants, get_assistant_by_id_repository, delete_assistant_repository, update_assistant_repository
 from api.Assistant.assistant_response_model import AssistantRequest, AssistantResponse, AssistantInfoResponse, AssistantListItemResponse, ContextResponse, UpdateAssistantRequest
+from api.search.search_service import get_search_texts_details
 from api.Assistant.assistant_repository import create_assistant_repository
 from typing import List
 from api.Assistant.assistant_model import Assistant, Context
@@ -75,10 +76,14 @@ async def create_assistant_service(token: str, assistant_request: AssistantReque
     current_user_email = validate_and_extract_user_email(token=token)
     contexts_list = []
     for ctx in assistant_request.contexts:
+        if ctx.pecha_text_id:
+            search_details = await get_search_texts_details(ctx.pecha_text_id)
+            content = "\n\n".join([detail.content for detail in search_details]) if search_details else ""
+        else:
+            content = ctx.content
         contexts_list.append(
-            Context(content=ctx.content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
+            Context(content=content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
         )
-    
     if files:
         for file in files:
             if file.filename:
@@ -159,10 +164,17 @@ async def update_assistant_service(assistant_id: UUID, update_request: UpdateAss
         if update_request.contexts is not None:
             for context in assistant.contexts:
                 db_session.delete(context)
-            assistant.contexts = [
-                Context(content=ctx.content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
-                for ctx in update_request.contexts
-            ]
+            new_contexts = []
+            for ctx in update_request.contexts:
+                if ctx.pecha_text_id:
+                    search_details = await get_search_texts_details(ctx.pecha_text_id)
+                    content = "\n\n".join([detail.content for detail in search_details]) if search_details else ""
+                else:
+                    content = ctx.content
+                new_contexts.append(
+                    Context(content=content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
+                )
+            assistant.contexts = new_contexts
         
         assistant.updated_at = datetime.now(timezone.utc)
         
