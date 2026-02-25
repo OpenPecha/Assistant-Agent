@@ -10,7 +10,6 @@ search_router = APIRouter(
     tags=["search"]
 )
 
-
 @search_router.get("/{text_id}", status_code=status.HTTP_200_OK, response_model=list[SearchTextsDetailsResponse])
 async def read_texts_details(
         text_id: str
