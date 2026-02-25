@@ -15,7 +15,7 @@ from api.Assistant.assistant_cache_service import (
     set_assistant_detail_cache,
     delete_assistant_detail_cache,
 )
-from api.langgraph.context_processor import validate_file, extract_content_from_file
+from api.utils import Utils
 
 
 def _build_context_responses(contexts) -> List[ContextResponse]:
@@ -73,9 +73,7 @@ def get_assistants(skip: 0, limit: 20) -> AssistantResponse:
 
 async def create_assistant_service(token: str, assistant_request: AssistantRequest, files: List[UploadFile] = None):
     current_user_email = validate_and_extract_user_email(token=token)
-    
     contexts_list = []
-    
     for ctx in assistant_request.contexts:
         contexts_list.append(
             Context(content=ctx.content, pecha_title=ctx.pecha_title, pecha_text_id=ctx.pecha_text_id)
@@ -86,8 +84,8 @@ async def create_assistant_service(token: str, assistant_request: AssistantReque
             if file.filename:
                 file_bytes = await file.read()
                 try:
-                    validate_file(file.filename, len(file_bytes))
-                    extracted_content = extract_content_from_file(file_bytes, file.filename)
+                    Utils.validate_file(file.filename, len(file_bytes))
+                    extracted_content = Utils.extract_content_from_file(file_bytes, file.filename)
                     contexts_list.append(Context(content=extracted_content))
                 except ValueError as e:
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

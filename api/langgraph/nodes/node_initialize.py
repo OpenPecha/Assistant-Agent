@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 
 from api.langgraph.workflow_type import WorkflowState,Batch
-from api.langgraph.context_processor import process_contexts
+from api.utils import Utils
 from api import config
 
 DEFAULT_MAX_BATCH_SIZE = 2
@@ -17,7 +17,7 @@ def initialize_workflow(state: WorkflowState) -> WorkflowState:
     batch_size = init_size
 
 
-    processed_contexts = process_contexts(request.contexts) if request.contexts else None
+    processed_contexts = Utils.process_contexts(request.contexts) if request.contexts else None
 
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i : i + batch_size]
