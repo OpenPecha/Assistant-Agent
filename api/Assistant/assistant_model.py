@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column,DateTime,String,ForeignKey,Boolean,UUID,Text
+from sqlalchemy import Column,DateTime,String,ForeignKey,Boolean,UUID,Text,Integer
 from datetime import datetime,timezone
 from uuid import uuid4
 from api.db.pg_database import Base
@@ -30,6 +30,7 @@ class Context(Base):
     content=Column(Text,nullable=True)
     pecha_title = Column(String(255), nullable=True)
     pecha_text_id = Column(String(255), nullable=True)
+    token_count = Column(Integer, nullable=True)
     assistant_id = Column(UUID(as_uuid=True),ForeignKey("assistant.id", ondelete="CASCADE"),nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc),nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
