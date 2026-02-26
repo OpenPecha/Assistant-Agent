@@ -24,7 +24,11 @@ def build_workflow_request(db_session, assistant_id, target_language, prompt, mo
         assistant_source_type=assistant_detail.source_type,
         assistant_system_prompt=assistant_detail.system_prompt,
         contexts=[
-            ContextRequest(content=context.content, file_url=context.file_url) 
+            ContextRequest(
+                content=context.content,
+                pecha_title=context.pecha_title,
+                pecha_text_id=context.pecha_text_id
+            ) 
             for context in assistant_detail.contexts
         ],
         target_language=target_language,
