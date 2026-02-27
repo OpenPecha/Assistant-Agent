@@ -16,6 +16,8 @@ class ModelSpec:
     required_credential: Optional[str] = None
     build: BuildFn = None
     description: str = ""
+    display_name: str = ""
+    is_thinking: bool = False
     capabilities: Sequence[str] = field(default_factory=tuple)
     context_window: Optional[int] = None
     aliases: Sequence[str] = field(default_factory=tuple)
