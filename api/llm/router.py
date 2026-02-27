@@ -39,8 +39,10 @@ class ModelRouter:
         for name, spec in REGISTRY.items():
             if self._has_credential(spec):
                 out[name] = {
+                    "name": spec.display_name,
                     "provider": spec.provider,
                     "description": spec.description,
+                    "is_thinking": spec.is_thinking,
                     "capabilities": list(spec.capabilities),
                     "context_window": spec.context_window,
                 }

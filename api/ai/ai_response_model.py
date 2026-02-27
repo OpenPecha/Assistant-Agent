@@ -14,8 +14,10 @@ class WorkflowRequest(BaseModel):
 
 
 class ModelInfo(BaseModel):
+    name: str
     provider: str
     description: str
+    is_thinking: bool
     capabilities: List[str]
     context_window: Optional[int] = None
 

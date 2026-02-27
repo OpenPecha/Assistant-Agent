@@ -106,8 +106,10 @@ def get_available_models_service() -> AvailableModelsResponse:
     models = {}
     for model_name, model_data in available_models_dict.items():
         models[model_name] = ModelInfo(
+            name=model_data["name"],
             provider=model_data["provider"],
             description=model_data["description"],
+            is_thinking=model_data["is_thinking"],
             capabilities=model_data["capabilities"],
             context_window=model_data.get("context_window")
         )
