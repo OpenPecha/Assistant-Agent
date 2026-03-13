@@ -534,8 +534,6 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
             <select id="modelSelect">
               <optgroup label="Anthropic">
                 <option value="claude-sonnet-4-20250514">Claude Sonnet 4.0</option>
-                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
-                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
                 <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
                 <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
               </optgroup>
@@ -548,8 +546,6 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
                 <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-2.5-flash-thinking">Gemini 2.5 Flash Thinking</option>
-                <option value="gemini-pro-vision">Gemini Pro Vision</option>
-                <option value="gemini-pro">Gemini Pro</option>
               </optgroup>
               <optgroup label="Dharmamitra">
                 <option value="dharamitra">Dharmamitra</option>
