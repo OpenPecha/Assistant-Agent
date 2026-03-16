@@ -1,4 +1,5 @@
-from typing import AsyncGenerator
+import asyncio
+from typing import AsyncGenerator, List
 
 from api.Assistant.assistant_repository import get_assistant_by_id_repository
 from api.Assistant.assistant_response_model import ContextRequest
@@ -10,7 +11,8 @@ from api.ai.ai_response_model import (
     WorkflowResult, 
     ResponseMetadata,
     AvailableModelsResponse,
-    ModelInfo
+    ModelInfo,
+    MultiModelResponse,
 )
 from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
@@ -37,31 +39,30 @@ def build_workflow_request(db_session, assistant_id, target_language, prompt, mo
     )
 
 
-def validate_model(model: str) -> None:
+def validate_models(models: List[str]) -> None:
     model_router = get_model_router()
-    if not model_router.validate_model_availability(model):
+    invalid_models = [m for m in models if not model_router.validate_model_availability(m)]
+    if invalid_models:
         available_models = model_router.available_models()
         raise HTTPException(
-            status_code=400, 
-            detail=f"Model not available: Select from this list: {list(available_models.keys())}"
+            status_code=400,
+            detail=f"Models not available: {invalid_models}. Select from: {list(available_models.keys())}"
         )
 
 
-async def run_workflow_service(assistant_id, target_language, prompt, model):
-    validate_model(model)
-    
+async def _run_single_workflow(assistant_id, target_language, prompt, model: str) -> StreamResponse:
     with SessionLocal() as db_session:
         workflow_request = build_workflow_request(
             db_session, assistant_id, target_language, prompt, model
         )
-    
+
     workflow_response = await run_workflow(workflow_request)
-    
+
     results = [
         WorkflowResult(output_text=result.output_text)
         for result in workflow_response.get("final_results", [])
     ]
-    
+
     workflow_metadata = workflow_response.get("metadata", {})
     response_metadata = ResponseMetadata(
         initialized_at=workflow_metadata.get("initialized_at"),
@@ -69,23 +70,37 @@ async def run_workflow_service(assistant_id, target_language, prompt, model):
         completed_at=workflow_metadata.get("completed_at"),
         total_processing_time=workflow_metadata.get("total_processing_time")
     )
-    
-    response = StreamResponse(
+
+    return StreamResponse(
+        model=model,
         results=results,
         metadata=response_metadata,
         errors=workflow_response.get("errors", [])
     )
-    
-    return response
+
+
+async def run_workflow_service(
+    assistant_id, target_language, prompt, models: List[str]
+) -> MultiModelResponse:
+    validate_models(models)
+
+    responses = await asyncio.gather(
+        *[
+            _run_single_workflow(assistant_id, target_language, prompt, model)
+            for model in models
+        ]
+    )
+
+    return MultiModelResponse(responses=list(responses))
 
 
 async def stream_workflow_service(
     assistant_id, 
     target_language, 
     prompt, 
-    model
+    model: str
 ) -> AsyncGenerator[str, None]:
-    validate_model(model)
+    validate_models([model])
     
     with SessionLocal() as db_session:
         workflow_request = build_workflow_request(
@@ -98,6 +113,7 @@ async def stream_workflow_service(
         model=model
     ):
         yield event
+
 
 def get_available_models_service() -> AvailableModelsResponse:
     model_router = get_model_router()
