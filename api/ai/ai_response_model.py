@@ -30,8 +30,7 @@ class StreamRequest(BaseModel):
     assistant_id: UUID
     target_language: Optional[str] = None
     prompt: List[str] = Field(min_length=1)
-    model: List[str] = Field(min_length=1)
-
+    model: str = Field(min_length=1)
 
 class WorkflowResult(BaseModel):
     output_text: str
@@ -45,11 +44,6 @@ class ResponseMetadata(BaseModel):
 
 
 class StreamResponse(BaseModel):
-    model: str
     results: List[WorkflowResult]
     metadata: ResponseMetadata
     errors: List[Any]
-
-
-class MultiModelResponse(BaseModel):
-    responses: List[StreamResponse]
