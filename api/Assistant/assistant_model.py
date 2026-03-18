@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column,DateTime,String,ForeignKey,Boolean,UUID,Text,Integer
+from sqlalchemy import Column,DateTime,String,ForeignKey,Boolean,UUID,Text,Integer,JSON
 from datetime import datetime,timezone
 from uuid import uuid4
 from api.db.pg_database import Base
@@ -9,8 +9,11 @@ class Assistant(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)    
     name=Column(String(255),nullable=False)
-    source_type=Column(String(255),nullable=True)
     description=Column(Text,nullable=True)
+    language=Column(String(255),nullable=True)
+    model=Column(String(255),nullable=True)
+    user_prompt=Column(Text,nullable=True)
+    variables=Column(JSON,nullable=True)
     system_prompt=Column(Text,nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc),nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
