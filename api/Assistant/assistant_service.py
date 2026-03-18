@@ -38,8 +38,9 @@ def _build_assistant_list_item_response(assistant) -> AssistantListItemResponse:
     return AssistantListItemResponse(
         id=assistant.id,
         name=assistant.name,
-        source_type=assistant.source_type,
         description=assistant.description,
+        language=assistant.language,
+        model=assistant.model,
         created_by=assistant.created_by,
         system_assistance=assistant.system_assistance
     )
@@ -49,8 +50,11 @@ def _build_assistant_info_response(assistant) -> AssistantInfoResponse:
     return AssistantInfoResponse(
         id=assistant.id,
         name=assistant.name,
-        source_type=assistant.source_type,
         description=assistant.description,
+        language=assistant.language,
+        model=assistant.model,
+        user_prompt=assistant.user_prompt,
+        variables=assistant.variables,
         system_prompt=assistant.system_prompt,
         contexts=_build_context_responses(assistant.contexts),
         created_by=assistant.created_by,
@@ -104,8 +108,11 @@ async def create_assistant_service(token: str, assistant_request: AssistantReque
     with SessionLocal() as db_session:
         assistant = Assistant(
             name=assistant_request.name,
-            source_type=assistant_request.source_type,
             description=assistant_request.description,
+            language=assistant_request.language,
+            model=assistant_request.model,
+            user_prompt=assistant_request.user_prompt,
+            variables=assistant_request.variables,
             system_prompt=assistant_request.system_prompt,
             system_assistance=assistant_request.system_assistance,
             created_by=current_user_email,
@@ -159,10 +166,16 @@ async def update_assistant_service(assistant_id: UUID, update_request: UpdateAss
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ErrorConstants.UNAUTHORIZED_ERROR_MESSAGE)
         if update_request.name is not None:
             assistant.name = update_request.name
-        if update_request.source_type is not None:
-            assistant.source_type = update_request.source_type
         if update_request.description is not None:
             assistant.description = update_request.description
+        if update_request.language is not None:
+            assistant.language = update_request.language
+        if update_request.model is not None:
+            assistant.model = update_request.model
+        if update_request.user_prompt is not None:
+            assistant.user_prompt = update_request.user_prompt
+        if update_request.variables is not None:
+            assistant.variables = update_request.variables
         if update_request.system_prompt is not None:
             assistant.system_prompt = update_request.system_prompt
         if update_request.system_assistance is not None:

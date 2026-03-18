@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from uuid import UUID
-from typing import List, Optional
+from typing import List, Optional, Any
 
 class ContextRequest(BaseModel):
     content: Optional[str] = None
@@ -16,8 +16,11 @@ class ContextResponse(BaseModel):
 class AssistantInfoResponse(BaseModel):
     id: UUID
     name: str
-    source_type: Optional[str] = None
     description: Optional[str] = None
+    language: Optional[str] = None
+    model: Optional[str] = None
+    user_prompt: Optional[str] = None
+    variables: Optional[Any] = None
     system_prompt: str
     contexts: List[ContextResponse]
     created_by: Optional[str] = None
@@ -26,8 +29,9 @@ class AssistantInfoResponse(BaseModel):
 class AssistantListItemResponse(BaseModel):
     id: UUID
     name: str
-    source_type: Optional[str] = None
     description: Optional[str] = None
+    language: Optional[str] = None
+    model: Optional[str] = None
     created_by: Optional[str] = None
     system_assistance: bool = False
 
@@ -39,16 +43,22 @@ class AssistantResponse(BaseModel):
 
 class AssistantRequest(BaseModel):
     name: str
-    source_type: Optional[str] = None
     description: Optional[str] = None
+    language: Optional[str] = None
+    model: Optional[str] = None
+    user_prompt: Optional[str] = None
+    variables: Optional[Any] = None
     system_prompt: str
     contexts: List[ContextRequest]
     system_assistance: bool = False
 
 class UpdateAssistantRequest(BaseModel):
     name: Optional[str] = None
-    source_type: Optional[str] = None
     description: Optional[str] = None
+    language: Optional[str] = None
+    model: Optional[str] = None
+    user_prompt: Optional[str] = None
+    variables: Optional[Any] = None
     system_prompt: Optional[str] = None
     contexts: Optional[List[ContextRequest]] = None
     system_assistance: Optional[bool] = None

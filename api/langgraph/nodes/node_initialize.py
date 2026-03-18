@@ -25,7 +25,6 @@ def initialize_workflow(state: WorkflowState) -> WorkflowState:
             batch_id=str(uuid.uuid4()),
             texts=batch_texts,
             target_language=request.target_language,
-            text_type=request.assistant_source_type,
             model_name=request.model,
             user_rules=request.assistant_system_prompt,
             contexts=processed_contexts,

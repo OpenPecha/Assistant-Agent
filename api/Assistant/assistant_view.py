@@ -26,17 +26,24 @@ async def create_assistant(
     authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)],
     name: str = Form(...),
     system_prompt: str = Form(...),
-    source_type: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    language: Optional[str] = Form(None),
+    model: Optional[str] = Form(None),
+    user_prompt: Optional[str] = Form(None),
+    variables: Optional[str] = Form(None),
     system_assistance: bool = Form(False),
     contexts: Optional[str] = Form(None),
     files: List[UploadFile] = File(default=[])
 ):
     contexts_data = json.loads(contexts) if contexts else []
+    variables_data = json.loads(variables) if variables else None
     assistant_request = AssistantRequest(
         name=name,
-        source_type=source_type,
         description=description,
+        language=language,
+        model=model,
+        user_prompt=user_prompt,
+        variables=variables_data,
         system_prompt=system_prompt,
         contexts=contexts_data,
         system_assistance=system_assistance

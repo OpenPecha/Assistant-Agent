@@ -587,8 +587,20 @@ input,textarea,select{font-family:inherit;font-size:inherit;border:none;outline:
         <textarea id="formDescription" placeholder="What does this assistant do?" rows="2"></textarea>
       </div>
       <div class="form-group">
-        <label>Source Type</label>
-        <input type="text" id="formSourceType" placeholder="e.g. translation, summarization..."/>
+        <label>Language</label>
+        <input type="text" id="formLanguage" placeholder="e.g. English, Tibetan..."/>
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" id="formModel" placeholder="e.g. gemini-2.0-flash..."/>
+      </div>
+      <div class="form-group">
+        <label>User Prompt</label>
+        <textarea id="formUserPrompt" placeholder="User prompt template..." rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Variables (JSON)</label>
+        <textarea id="formVariables" placeholder='{"key": "value"}' rows="2"></textarea>
       </div>
       <div class="form-group">
         <label>System Prompt *</label>
@@ -781,7 +793,8 @@ function renderAssistantList() {
          onclick="selectAssistant('${a.id}')">
       <h3>${esc(a.name)}</h3>
       <p>${esc(a.description || 'No description')}</p>
-      ${a.source_type ? `<span class="badge">${esc(a.source_type)}</span>` : ''}
+      ${a.language ? `<span class="badge">${esc(a.language)}</span>` : ''}
+      ${a.model ? `<span class="badge">${esc(a.model)}</span>` : ''}
     </div>
   `).join('');
 }
@@ -805,7 +818,7 @@ function showAssistantView() {
   const v = document.getElementById('assistantView');
   v.style.display = 'flex';
   document.getElementById('activeAssistantName').textContent = activeAssistant.name;
-  document.getElementById('activeAssistantSource').textContent = activeAssistant.source_type || 'general';
+  document.getElementById('activeAssistantSource').textContent = activeAssistant.language || 'general';
   document.getElementById('detailId').textContent = activeAssistant.id;
   document.getElementById('detailDesc').textContent = activeAssistant.description || '—';
   document.getElementById('detailCreatedBy').textContent = activeAssistant.created_by || '—';
@@ -845,7 +858,10 @@ function openEditModal() {
   document.getElementById('modalSubmitBtn').textContent = 'Save Changes';
   document.getElementById('formName').value = activeAssistant.name || '';
   document.getElementById('formDescription').value = activeAssistant.description || '';
-  document.getElementById('formSourceType').value = activeAssistant.source_type || '';
+  document.getElementById('formLanguage').value = activeAssistant.language || '';
+  document.getElementById('formModel').value = activeAssistant.model || '';
+  document.getElementById('formUserPrompt').value = activeAssistant.user_prompt || '';
+  document.getElementById('formVariables').value = activeAssistant.variables ? JSON.stringify(activeAssistant.variables) : '';
   document.getElementById('formSystemPrompt').value = activeAssistant.system_prompt || '';
   document.getElementById('formSystemAssistance').checked = activeAssistant.system_assistance || false;
   const cl = document.getElementById('contextList');
@@ -872,7 +888,10 @@ function closeModal(e) {
 function clearForm() {
   document.getElementById('formName').value = '';
   document.getElementById('formDescription').value = '';
-  document.getElementById('formSourceType').value = '';
+  document.getElementById('formLanguage').value = '';
+  document.getElementById('formModel').value = '';
+  document.getElementById('formUserPrompt').value = '';
+  document.getElementById('formVariables').value = '';
   document.getElementById('formSystemPrompt').value = '';
   document.getElementById('formSystemAssistance').checked = false;
   document.getElementById('contextList').innerHTML = '';
@@ -1166,7 +1185,10 @@ async function submitModal() {
       const body = {
         name,
         description: document.getElementById('formDescription').value.trim() || null,
-        source_type: document.getElementById('formSourceType').value.trim() || null,
+        language: document.getElementById('formLanguage').value.trim() || null,
+        model: document.getElementById('formModel').value.trim() || null,
+        user_prompt: document.getElementById('formUserPrompt').value.trim() || null,
+        variables: document.getElementById('formVariables').value.trim() ? JSON.parse(document.getElementById('formVariables').value.trim()) : null,
         system_prompt,
         system_assistance: document.getElementById('formSystemAssistance').checked,
         contexts: contextsData
@@ -1178,7 +1200,10 @@ async function submitModal() {
       formData.append('name', name);
       formData.append('system_prompt', system_prompt);
       formData.append('description', document.getElementById('formDescription').value.trim() || '');
-      formData.append('source_type', document.getElementById('formSourceType').value.trim() || '');
+      formData.append('language', document.getElementById('formLanguage').value.trim() || '');
+      formData.append('model', document.getElementById('formModel').value.trim() || '');
+      formData.append('user_prompt', document.getElementById('formUserPrompt').value.trim() || '');
+      formData.append('variables', document.getElementById('formVariables').value.trim() || '');
       formData.append('system_assistance', document.getElementById('formSystemAssistance').checked);
       formData.append('contexts', JSON.stringify(contextsData));
       

@@ -12,8 +12,9 @@ def get_all_assistants(db: Session, skip: int, limit: int) -> Tuple[List[Assista
         load_only(
             Assistant.id,
             Assistant.name,
-            Assistant.source_type,
             Assistant.description,
+            Assistant.language,
+            Assistant.model,
             Assistant.created_by,
             Assistant.system_assistance
         )

@@ -5,8 +5,9 @@ from uuid import UUID
 
 class WorkflowRequest(BaseModel):
     assistant_name: str
-    assistant_source_type: str
     assistant_system_prompt: str
+    assistant_user_prompt: Optional[str] = None
+    assistant_variables: Optional[Any] = None
     contexts: List[ContextRequest]
     target_language: Optional[str] = None
     text: List[str]

@@ -21,8 +21,9 @@ def build_workflow_request(db_session, assistant_id, target_language, prompt, mo
     assistant_detail = get_assistant_by_id_repository(db_session, assistant_id)
     return WorkflowRequest(
         assistant_name=assistant_detail.name,
-        assistant_source_type=assistant_detail.source_type,
         assistant_system_prompt=assistant_detail.system_prompt,
+        assistant_user_prompt=assistant_detail.user_prompt,
+        assistant_variables=assistant_detail.variables,
         contexts=[
             ContextRequest(
                 content=context.content,
