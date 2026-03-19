@@ -3,11 +3,18 @@ from api.Assistant.assistant_response_model import ContextRequest
 from pydantic import BaseModel, Field
 from uuid import UUID
 
+class SegmentRequest(BaseModel):
+    start: int
+    end: int
+
+
 class WorkflowRequest(BaseModel):
     assistant_name: str
     assistant_system_prompt: str
     assistant_user_prompt: Optional[str] = None
     assistant_variables: Optional[Any] = None
+    instance_id: Optional[str] = None
+    segments: Optional[SegmentRequest] = None
     contexts: List[ContextRequest]
     target_language: Optional[str] = None
     text: List[str]
@@ -26,11 +33,11 @@ class ModelInfo(BaseModel):
 class AvailableModelsResponse(BaseModel):
     models: Dict[str, ModelInfo]
 
-
 class StreamRequest(BaseModel):
     assistant_id: UUID
     target_language: Optional[str] = None
     prompt: List[str] = Field(min_length=1)
+    segments:SegmentRequest
     model: str = Field(min_length=1)
 
 class WorkflowResult(BaseModel):

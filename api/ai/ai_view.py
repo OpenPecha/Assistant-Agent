@@ -48,6 +48,7 @@ async def run_workflow(
         assistant_id=payload.assistant_id,
         target_language=payload.target_language,
         prompt=payload.prompt,
+        segments=payload.segments,
         model=payload.model,
     )
 

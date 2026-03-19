@@ -6,6 +6,7 @@ from api.langgraph.workflow_init import run_workflow
 from api.langgraph.workflow_stream import stream_workflow_events
 from api.ai.ai_response_model import (
     WorkflowRequest, 
+    SegmentRequest,
     StreamResponse, 
     WorkflowResult, 
     ResponseMetadata,
@@ -17,13 +18,19 @@ from api.llm.router import get_model_router
 from fastapi import HTTPException
 
 
-def build_workflow_request(db_session, assistant_id, target_language, prompt, model) -> WorkflowRequest:
+def build_workflow_request(db_session, assistant_id, target_language, prompt, segments, model) -> WorkflowRequest:
     assistant_detail = get_assistant_by_id_repository(db_session, assistant_id)
+
+    variables = assistant_detail.variables or {}
+    instance_id = variables.get("instance_id") if isinstance(variables, dict) else None
+
     return WorkflowRequest(
         assistant_name=assistant_detail.name,
         assistant_system_prompt=assistant_detail.system_prompt,
         assistant_user_prompt=assistant_detail.user_prompt,
         assistant_variables=assistant_detail.variables,
+        instance_id=instance_id,
+        segments=segments,
         contexts=[
             ContextRequest(
                 content=context.content,
@@ -48,12 +55,12 @@ def validate_model(model: str) -> None:
         )
 
 
-async def run_workflow_service(assistant_id, target_language, prompt, model):
+async def run_workflow_service(assistant_id, target_language, prompt, segments, model):
     validate_model(model)
     
     with SessionLocal() as db_session:
         workflow_request = build_workflow_request(
-            db_session, assistant_id, target_language, prompt, model
+            db_session, assistant_id, target_language, prompt, segments, model
         )
     
     workflow_response = await run_workflow(workflow_request)
@@ -90,7 +97,7 @@ async def stream_workflow_service(
     
     with SessionLocal() as db_session:
         workflow_request = build_workflow_request(
-            db_session, assistant_id, target_language, prompt, model
+            db_session, assistant_id, target_language, prompt, None, model
         )
     
     async for event in stream_workflow_events(
