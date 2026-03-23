@@ -15,6 +15,7 @@ from api.ai.ai_response_model import (
 )
 from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
+from api.external_api import get_related_segment_ids
 from fastapi import HTTPException
 
 
@@ -62,6 +63,14 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
         workflow_request = build_workflow_request(
             db_session, assistant_id, target_language, prompt, segments, model
         )
+    
+    if workflow_request.instance_id and workflow_request.segments:
+        related_segment_ids = await get_related_segment_ids(
+            instance_id=workflow_request.instance_id,
+            span_start=workflow_request.segments.start,
+            span_end=workflow_request.segments.end,
+        )
+    print(f"Fetched {len(related_segment_ids)} related segment IDs: {related_segment_ids}")
     
     workflow_response = await run_workflow(workflow_request)
     
