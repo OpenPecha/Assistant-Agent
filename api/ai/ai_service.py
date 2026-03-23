@@ -89,7 +89,11 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
             elif result:
                 collected_contents.append(result)
 
-        print(f"Fetched content for {len(collected_contents)}/{len(all_segment_ids)} segments")
+        if collected_contents:
+            for content in collected_contents:
+                workflow_request.contexts.append(
+                    ContextRequest(content=content)
+                )
     
     workflow_response = await run_workflow(workflow_request)
     

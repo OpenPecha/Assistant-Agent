@@ -28,8 +28,8 @@ async def process_batch(state: WorkflowState) -> WorkflowState:
             prompt = get_specialized_prompt(
                 source_text=input_text,
                 target_language=current_batch.target_language,
-                text_type=current_batch.text_type,
                 user_rules=current_batch.user_rules,
+                user_prompt=current_batch.user_prompt,
                 contexts=current_batch.contexts,
             )
             message = HumanMessage(content=prompt)
@@ -42,7 +42,6 @@ async def process_batch(state: WorkflowState) -> WorkflowState:
                 metadata={
                     "batch_id": current_batch.batch_id,
                     "model_used": current_batch.model_name,
-                    "text_type": current_batch.text_type,
                 },
             )
             item_results.append(result)
