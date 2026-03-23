@@ -13,7 +13,7 @@ class WorkflowRequest(BaseModel):
     assistant_system_prompt: str
     assistant_user_prompt: Optional[str] = None
     assistant_variables: Optional[Any] = None
-    instance_id: Optional[str] = None
+    instance_ids: List[str] = []
     segments: Optional[SegmentRequest] = None
     contexts: List[ContextRequest]
     target_language: Optional[str] = None

@@ -22,15 +22,18 @@ from fastapi import HTTPException
 def build_workflow_request(db_session, assistant_id, target_language, prompt, segments, model) -> WorkflowRequest:
     assistant_detail = get_assistant_by_id_repository(db_session, assistant_id)
 
-    variables = assistant_detail.variables or {}
-    instance_id = variables.get("instance_id") if isinstance(variables, dict) else None
+    variables = assistant_detail.variables or []
+    instance_ids = [
+        v.get("instanceId") for v in variables
+        if isinstance(v, dict) and v.get("instanceId")
+    ] if isinstance(variables, list) else []
 
     return WorkflowRequest(
         assistant_name=assistant_detail.name,
         assistant_system_prompt=assistant_detail.system_prompt,
         assistant_user_prompt=assistant_detail.user_prompt,
         assistant_variables=assistant_detail.variables,
-        instance_id=instance_id,
+        instance_ids=instance_ids,
         segments=segments,
         contexts=[
             ContextRequest(
@@ -63,14 +66,15 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
         workflow_request = build_workflow_request(
             db_session, assistant_id, target_language, prompt, segments, model
         )
-    
-    if workflow_request.instance_id and workflow_request.segments:
-        related_segment_ids = await get_related_segment_ids(
-            instance_id=workflow_request.instance_id,
-            span_start=workflow_request.segments.start,
-            span_end=workflow_request.segments.end,
-        )
-    print(f"Fetched {len(related_segment_ids)} related segment IDs: {related_segment_ids}")
+    if workflow_request.instance_ids and workflow_request.segments:
+        all_segment_ids = []
+        for instance_id in workflow_request.instance_ids:
+            segment_ids = await get_related_segment_ids(
+                instance_id=instance_id,
+                span_start=workflow_request.segments.start,
+                span_end=workflow_request.segments.end,
+            )
+            all_segment_ids.extend(segment_ids)
     
     workflow_response = await run_workflow(workflow_request)
     

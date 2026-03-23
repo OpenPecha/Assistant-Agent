@@ -38,29 +38,21 @@ async def call_external_pecha_api_instances_content(instance_id: str) -> str:
 async def get_related_segment_ids(
     instance_id: str, span_start: int, span_end: int
 ) -> list[str]:
-    adjusted_start = max(0, span_start - 10)
-    adjusted_end = span_end + 10
-
-    endpoint = (
-        f"{EXTERNAL_PECHA_API_URL}/instances/{instance_id}"
-        f"/segment-related?span_start={adjusted_start}&span_end={adjusted_end}&transform=false"
-    )
+    endpoint = f"{EXTERNAL_PECHA_API_URL}/instances/{instance_id}/segment-related?span_start={span_start}&span_end={span_end}&transform=false"
     try:
-        response = await client.get(endpoint, headers=ACCEPT_JSON_HEADER)
+        response = await client.get(endpoint, headers=ACCEPT_JSON_HEADER, timeout=60.0)
         response.raise_for_status()
         data = response.json()
-
         segment_ids = []
         for related in data if isinstance(data, list) else []:
             for segment in related.get("segments", []):
                 sid = segment.get("segment_id")
                 if sid:
                     segment_ids.append(sid)
-
-        print(f"Related segment IDs for instance {instance_id}: {segment_ids}")
         return segment_ids
 
     except httpx.HTTPStatusError as e:
         handle_http_status_error(e)
     except httpx.RequestError as e:
+        print(f"RequestError type: {type(e).__name__}, details: {repr(e)}")
         handle_request_error(e)
