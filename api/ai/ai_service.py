@@ -1,3 +1,4 @@
+import asyncio
 from typing import AsyncGenerator
 
 from api.Assistant.assistant_repository import get_assistant_by_id_repository
@@ -15,7 +16,7 @@ from api.ai.ai_response_model import (
 )
 from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
-from api.external_api import get_related_segment_ids
+from api.external_api import get_related_segment_ids, get_segment_content
 from fastapi import HTTPException
 
 
@@ -75,6 +76,20 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
                 span_end=workflow_request.segments.end,
             )
             all_segment_ids.extend(segment_ids)
+
+        segment_contents = await asyncio.gather(
+            *[get_segment_content(sid) for sid in all_segment_ids],
+            return_exceptions=True
+        )
+
+        collected_contents = []
+        for sid, result in zip(all_segment_ids, segment_contents):
+            if isinstance(result, Exception):
+                continue
+            elif result:
+                collected_contents.append(result)
+
+        print(f"Fetched content for {len(collected_contents)}/{len(all_segment_ids)} segments")
     
     workflow_response = await run_workflow(workflow_request)
     
