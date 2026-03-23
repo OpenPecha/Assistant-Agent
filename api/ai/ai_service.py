@@ -1,3 +1,4 @@
+import asyncio
 from typing import AsyncGenerator
 
 from api.Assistant.assistant_repository import get_assistant_by_id_repository
@@ -6,6 +7,7 @@ from api.langgraph.workflow_init import run_workflow
 from api.langgraph.workflow_stream import stream_workflow_events
 from api.ai.ai_response_model import (
     WorkflowRequest, 
+    SegmentRequest,
     StreamResponse, 
     WorkflowResult, 
     ResponseMetadata,
@@ -14,16 +16,26 @@ from api.ai.ai_response_model import (
 )
 from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
+from api.external_api import get_related_segment_ids, get_segment_content
 from fastapi import HTTPException
 
 
-def build_workflow_request(db_session, assistant_id, target_language, prompt, model) -> WorkflowRequest:
+def build_workflow_request(db_session, assistant_id, target_language, prompt, segments, model) -> WorkflowRequest:
     assistant_detail = get_assistant_by_id_repository(db_session, assistant_id)
+
+    variables = assistant_detail.variables or []
+    instance_ids = [
+        v.get("instanceId") for v in variables
+        if isinstance(v, dict) and v.get("instanceId")
+    ] if isinstance(variables, list) else []
+
     return WorkflowRequest(
         assistant_name=assistant_detail.name,
         assistant_system_prompt=assistant_detail.system_prompt,
         assistant_user_prompt=assistant_detail.user_prompt,
         assistant_variables=assistant_detail.variables,
+        instance_ids=instance_ids,
+        segments=segments,
         contexts=[
             ContextRequest(
                 content=context.content,
@@ -48,13 +60,40 @@ def validate_model(model: str) -> None:
         )
 
 
-async def run_workflow_service(assistant_id, target_language, prompt, model):
+async def run_workflow_service(assistant_id, target_language, prompt, segments, model, offset=0):
     validate_model(model)
     
     with SessionLocal() as db_session:
         workflow_request = build_workflow_request(
-            db_session, assistant_id, target_language, prompt, model
+            db_session, assistant_id, target_language, prompt, segments, model
         )
+    if workflow_request.instance_ids and workflow_request.segments:
+        all_segment_ids = []
+        for instance_id in workflow_request.instance_ids:
+            segment_ids = await get_related_segment_ids(
+                instance_id=instance_id,
+                span_start=max(0, workflow_request.segments.start - offset),
+                span_end=workflow_request.segments.end + offset,
+            )
+            all_segment_ids.extend(segment_ids)
+
+        segment_contents = await asyncio.gather(
+            *[get_segment_content(sid) for sid in all_segment_ids],
+            return_exceptions=True
+        )
+
+        collected_contents = []
+        for sid, result in zip(all_segment_ids, segment_contents):
+            if isinstance(result, Exception):
+                continue
+            elif result:
+                collected_contents.append(result)
+
+        if collected_contents:
+            for content in collected_contents:
+                workflow_request.contexts.append(
+                    ContextRequest(content=content)
+                )
     
     workflow_response = await run_workflow(workflow_request)
     
@@ -90,7 +129,7 @@ async def stream_workflow_service(
     
     with SessionLocal() as db_session:
         workflow_request = build_workflow_request(
-            db_session, assistant_id, target_language, prompt, model
+            db_session, assistant_id, target_language, prompt, None, model
         )
     
     async for event in stream_workflow_events(

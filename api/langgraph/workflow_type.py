@@ -9,9 +9,9 @@ class Batch(BaseModel):
     batch_id: str = Field(..., description="Unique identifier for the batch")
     texts: List[str] = Field(..., description="Texts in this batch")
     target_language: Optional[str] = Field(None, description="Target language for translation tasks")
-    text_type: Optional[str] = Field(None, description="Type of Buddhist text")
     model_name: str = Field(..., description="Model to use")
     user_rules: Optional[str] = Field(None, description="Optional custom translation rules")
+    user_prompt: Optional[str] = Field(None, description="User-defined prompt instructions from assistant")
     contexts: Optional[List[str]] = Field(None, description="Additional context for processing")
 
 
