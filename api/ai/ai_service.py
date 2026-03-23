@@ -60,7 +60,7 @@ def validate_model(model: str) -> None:
         )
 
 
-async def run_workflow_service(assistant_id, target_language, prompt, segments, model):
+async def run_workflow_service(assistant_id, target_language, prompt, segments, model, offset=0):
     validate_model(model)
     
     with SessionLocal() as db_session:
@@ -72,8 +72,8 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
         for instance_id in workflow_request.instance_ids:
             segment_ids = await get_related_segment_ids(
                 instance_id=instance_id,
-                span_start=workflow_request.segments.start,
-                span_end=workflow_request.segments.end,
+                span_start=max(0, workflow_request.segments.start - offset),
+                span_end=workflow_request.segments.end + offset,
             )
             all_segment_ids.extend(segment_ids)
 

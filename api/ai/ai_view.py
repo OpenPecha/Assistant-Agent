@@ -50,6 +50,7 @@ async def run_workflow(
         prompt=payload.prompt,
         segments=payload.segments,
         model=payload.model,
+        offset=payload.offset,
     )
 
 

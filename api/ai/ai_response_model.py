@@ -37,8 +37,9 @@ class StreamRequest(BaseModel):
     assistant_id: UUID
     target_language: Optional[str] = None
     prompt: List[str] = Field(min_length=1)
-    segments:SegmentRequest
+    segments: SegmentRequest
     model: str = Field(min_length=1)
+    offset: int = 0
 
 class WorkflowResult(BaseModel):
     output_text: str
