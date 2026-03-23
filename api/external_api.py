@@ -34,6 +34,17 @@ async def call_external_pecha_api_instances_content(instance_id: str) -> str:
     except httpx.RequestError as e:
         handle_request_error(e)
 
+async def get_segment_content(segment_id:str) -> str:
+    endpoint = f"{EXTERNAL_PECHA_API_URL}/segments/{segment_id}/content"
+    try:
+        response = await client.get(endpoint, headers=ACCEPT_JSON_HEADER)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("content", "")
+    except httpx.HTTPStatusError as e:
+        handle_http_status_error(e)
+    except httpx.RequestError as e:
+        handle_request_error(e)
 
 async def get_related_segment_ids(
     instance_id: str, span_start: int, span_end: int
