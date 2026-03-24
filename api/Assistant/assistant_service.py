@@ -19,8 +19,16 @@ from api.Assistant.assistant_cache_service import (
     delete_assistant_detail_cache,
 )
 from api.utils import Utils
+import re
 
 token_counter = TokenCounter(api_key=get("GEMINI_API_KEY"))
+
+
+def _sync_variables_with_prompt(user_prompt: str, variables: list) -> list:
+    if not variables:
+        return variables
+    referenced_ids = set(re.findall(r"\{\{(.+?)\}\}", user_prompt or ""))
+    return [v for v in variables if v.get("instanceId") in referenced_ids]
 
 
 def _build_context_responses(contexts) -> List[ContextResponse]:
@@ -180,6 +188,9 @@ async def update_assistant_service(assistant_id: UUID, update_request: UpdateAss
             assistant.system_prompt = update_request.system_prompt
         if update_request.system_assistance is not None:
             assistant.system_assistance = update_request.system_assistance
+        assistant.variables = _sync_variables_with_prompt(
+            assistant.user_prompt, assistant.variables
+        )
         if update_request.contexts is not None:
             for context in assistant.contexts:
                 db_session.delete(context)

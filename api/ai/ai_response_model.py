@@ -37,7 +37,7 @@ class StreamRequest(BaseModel):
     assistant_id: UUID
     target_language: Optional[str] = None
     prompt: List[str] = Field(min_length=1)
-    segments: SegmentRequest
+    segments: Optional[SegmentRequest] = None
     model: str = Field(min_length=1)
     offset: int = 0
 
