@@ -1,5 +1,5 @@
-from api.ai.ai_response_model import StreamRequest, AvailableModelsResponse
-from api.ai.ai_service import run_workflow_service, stream_workflow_service, get_available_models_service
+from api.ai.ai_response_model import StreamRequest, AvailableModelsResponse, EnhanceRequest, EnhanceResponse
+from api.ai.ai_service import run_workflow_service, stream_workflow_service, get_available_models_service, enhance_prompt_service
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from starlette import status
@@ -81,4 +81,16 @@ async def stream_workflow(
         ),
         media_type="text/event-stream",
         headers=SSE_HEADERS
+    )
+
+@ai_router.post("/enhance", status_code=status.HTTP_200_OK, response_model=EnhanceResponse)
+async def enhance_prompt(
+    payload: EnhanceRequest,
+    authentication_credential: Annotated[
+        HTTPAuthorizationCredentials, Depends(oauth2_scheme)
+    ],
+):
+    return await enhance_prompt_service(
+        prompt=payload.prompt,
+        model=payload.model,
     )

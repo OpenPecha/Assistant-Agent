@@ -37,3 +37,19 @@ def get_specialized_prompt(
         additional_context_section=additional_context_section,
         source_text_block=source_text_block,
     )
+
+
+ENHANCE_META_PROMPT = """You are an expert prompt engineer. Your task is to enhance and improve the given system prompt while preserving the user's original intent and purpose.
+
+Guidelines for enhancement:
+- Make the instructions clearer and more specific
+- Add structure (e.g., role definition, constraints, output format) where beneficial
+- Remove ambiguity and vagueness
+- Maintain the original language and tone the user intended
+- Keep it concise — don't add unnecessary verbosity
+- If the prompt references specific domains or tasks, sharpen those references
+
+Return ONLY the enhanced system prompt text. Do not include any explanation, commentary, or markdown formatting around it.
+
+Original system prompt to enhance:
+{prompt}"""
