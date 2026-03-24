@@ -56,3 +56,10 @@ class StreamResponse(BaseModel):
     results: List[WorkflowResult]
     metadata: ResponseMetadata
     errors: List[Any]
+
+class EnhanceRequest(BaseModel):
+    prompt: str
+    model: str = "claude-sonnet-4-20250514"
+
+class EnhanceResponse(BaseModel):
+    enhanced_prompt: str

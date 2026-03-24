@@ -12,11 +12,13 @@ from api.ai.ai_response_model import (
     WorkflowResult, 
     ResponseMetadata,
     AvailableModelsResponse,
-    ModelInfo
+    ModelInfo,
+    EnhanceResponse
 )
 from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
 from api.external_api import get_related_segment_ids, get_segment_content
+from api.ai.prompts import ENHANCE_META_PROMPT
 from fastapi import HTTPException
 
 
@@ -155,3 +157,18 @@ def get_available_models_service() -> AvailableModelsResponse:
         )
     
     return AvailableModelsResponse(models=models)
+
+async def enhance_prompt_service(prompt: str, model: str = "claude-sonnet-4-20250514") -> EnhanceResponse:
+    model_router = get_model_router()
+    print(model)
+    if not model_router.validate_model_availability(model):
+        raise HTTPException(
+            status_code=503,
+            detail=f"Model '{model}' is not available. Check API key configuration."
+        )
+
+    llm = model_router.get_model(model, temperature=0.7, max_tokens=4096)
+    response = await llm.ainvoke(ENHANCE_META_PROMPT.format(prompt=prompt))
+    enhanced_text = response.content if hasattr(response, "content") else str(response)
+
+    return EnhanceResponse(enhanced_prompt=enhanced_text)
