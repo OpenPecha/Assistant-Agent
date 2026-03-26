@@ -70,9 +70,10 @@ def _build_assistant_info_response(assistant) -> AssistantInfoResponse:
     )
 
 
-def get_assistants(skip: 0, limit: 20) -> AssistantResponse:
+def get_assistants(token: str, skip: int = 0, limit: int = 20) -> AssistantResponse:
+    current_user_email = validate_and_extract_user_email(token=token)
     with SessionLocal() as db_session:
-        assistants, total = get_all_assistants(db=db_session, skip=skip, limit=limit)
+        assistants, total = get_all_assistants(db=db_session, skip=skip, limit=limit, user_email=current_user_email)
         assistants_response = [
             _build_assistant_list_item_response(assistant)
             for assistant in assistants
