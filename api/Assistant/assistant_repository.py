@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 import logging
 from api.error_constant import ErrorConstants
 
-def get_all_assistants(db: Session, skip: int, limit: int) -> Tuple[List[Assistant], int]:
+def get_all_assistants(db: Session, skip: int, limit: int, user_email: str) -> Tuple[List[Assistant], int]:
     db_query = db.query(Assistant).options(
         load_only(
             Assistant.id,
@@ -18,6 +18,8 @@ def get_all_assistants(db: Session, skip: int, limit: int) -> Tuple[List[Assista
             Assistant.created_by,
             Assistant.system_assistance
         )
+    ).filter(
+        (Assistant.created_by == user_email) | (Assistant.system_assistance == True)
     )
     total = db_query.count()
     assistants = db_query.offset(skip).limit(limit).all()
