@@ -3,7 +3,6 @@ from jose.exceptions import JWTClaimsError, ExpiredSignatureError
 from api.Auth.auth_repository import validate_token, get_user_info
 from fastapi import HTTPException, status
 from api.error_constant import ErrorConstants
-from api.db.pg_database import SessionLocal
 import logging
 
 
