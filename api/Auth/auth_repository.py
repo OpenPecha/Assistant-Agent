@@ -24,9 +24,19 @@ def verify_auth0_token(token: str):
             token,
             rsa_key,
             algorithms=["RS256"],
-            audience=get("CLIENT_ID"),
+            audience=f"https://{get('DOMAIN_NAME')}/api/v2/",
             issuer=f"https://{get('DOMAIN_NAME')}/"
         )
         return payload
     except JWTError as e:
         raise ValueError(f"Token validation failed: {e}")
+
+def get_user_info(token: str) -> Dict[str, Any]:
+    userinfo_url = f"https://{get('DOMAIN_NAME')}/userinfo"
+    response = requests.get(
+        userinfo_url,
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    if response.status_code != 200:
+        raise ValueError(f"Failed to fetch user info: {response.status_code}")
+    return response.json()

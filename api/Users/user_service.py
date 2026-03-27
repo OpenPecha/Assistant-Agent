@@ -1,6 +1,6 @@
 from jose import JWTError
 from jose.exceptions import JWTClaimsError, ExpiredSignatureError
-from api.Auth.auth_repository import validate_token
+from api.Auth.auth_repository import validate_token, get_user_info
 from fastapi import HTTPException, status
 from api.error_constant import ErrorConstants
 from api.db.pg_database import SessionLocal
@@ -9,8 +9,9 @@ import logging
 
 def validate_and_extract_user_email(token: str) -> str:
     try:
-        payload = validate_token(token)
-        email = payload.get("email")
+        validate_token(token)
+        user_info = get_user_info(token)
+        email = user_info.get("email")
         if email is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=ErrorConstants.TOKEN_ERROR_MESSAGE)
         return email
