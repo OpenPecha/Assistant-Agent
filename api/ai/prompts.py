@@ -2,6 +2,7 @@ PROMPT_TEMPLATE = """
 {target_language_line}
 main rules: {user_rules_section}
 {user_prompt_section}
+{instruction_section}
 {additional_context_section}
 {source_text_block}
 """
@@ -11,6 +12,7 @@ def get_specialized_prompt(
     target_language: str | None = None,
     user_rules: str | None = None,
     user_prompt: str | None = None,
+    instruction: str | None = None,
     contexts: list[str] | None = None,
 ) -> str:
     target_language_line = f"target language: {target_language}" if target_language else ""
@@ -20,6 +22,10 @@ def get_specialized_prompt(
     user_prompt_section = ""
     if user_prompt:
         user_prompt_section = f"user instructions: {user_prompt.strip()}"
+
+    instruction_section = ""
+    if instruction:
+        instruction_section = f"instruction: {instruction.strip()}"
 
     additional_context_section = ""
     if contexts:
@@ -34,6 +40,7 @@ def get_specialized_prompt(
         target_language_line=target_language_line,
         user_rules_section=(user_rules or "").strip(),
         user_prompt_section=user_prompt_section,
+        instruction_section=instruction_section,
         additional_context_section=additional_context_section,
         source_text_block=source_text_block,
     )

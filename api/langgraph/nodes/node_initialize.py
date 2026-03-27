@@ -28,6 +28,7 @@ def initialize_workflow(state: WorkflowState) -> WorkflowState:
             model_name=request.model,
             user_rules=request.assistant_system_prompt,
             user_prompt=request.assistant_user_prompt,
+            instruction=request.instruction,
             contexts=processed_contexts,
         )
         batches.append(batch)

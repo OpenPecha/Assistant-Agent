@@ -51,6 +51,7 @@ async def run_workflow(
         segments=payload.segments,
         model=payload.model,
         offset=payload.offset,
+        instruction=payload.instruction,
     )
 
 
@@ -78,6 +79,7 @@ async def stream_workflow(
             target_language=payload.target_language,
             prompt=payload.prompt,
             model=payload.model,
+            instruction=payload.instruction,
         ),
         media_type="text/event-stream",
         headers=SSE_HEADERS

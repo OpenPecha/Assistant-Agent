@@ -22,7 +22,7 @@ from api.ai.prompts import ENHANCE_META_PROMPT
 from fastapi import HTTPException
 
 
-def build_workflow_request(db_session, assistant_id, target_language, prompt, segments, model) -> WorkflowRequest:
+def build_workflow_request(db_session, assistant_id, target_language, prompt, segments, model, instruction=None) -> WorkflowRequest:
     assistant_detail = get_assistant_by_id_repository(db_session, assistant_id)
 
     variables = assistant_detail.variables or []
@@ -48,7 +48,8 @@ def build_workflow_request(db_session, assistant_id, target_language, prompt, se
         ],
         target_language=target_language,
         text=prompt,
-        model=model
+        model=model,
+        instruction=instruction,
     )
 
 
@@ -62,12 +63,12 @@ def validate_model(model: str) -> None:
         )
 
 
-async def run_workflow_service(assistant_id, target_language, prompt, segments, model, offset=0):
+async def run_workflow_service(assistant_id, target_language, prompt, segments, model, offset=0, instruction=None):
     validate_model(model)
     
     with SessionLocal() as db_session:
         workflow_request = build_workflow_request(
-            db_session, assistant_id, target_language, prompt, segments, model
+            db_session, assistant_id, target_language, prompt, segments, model, instruction
         )
     if workflow_request.instance_ids and workflow_request.segments:
         all_segment_ids = []
@@ -125,13 +126,14 @@ async def stream_workflow_service(
     assistant_id, 
     target_language, 
     prompt, 
-    model
+    model,
+    instruction=None,
 ) -> AsyncGenerator[str, None]:
     validate_model(model)
     
     with SessionLocal() as db_session:
         workflow_request = build_workflow_request(
-            db_session, assistant_id, target_language, prompt, None, model
+            db_session, assistant_id, target_language, prompt, None, model, instruction
         )
     
     async for event in stream_workflow_events(

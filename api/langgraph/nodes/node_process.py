@@ -30,6 +30,7 @@ async def process_batch(state: WorkflowState) -> WorkflowState:
                 target_language=current_batch.target_language,
                 user_rules=current_batch.user_rules,
                 user_prompt=current_batch.user_prompt,
+                instruction=current_batch.instruction,
                 contexts=current_batch.contexts,
             )
             message = HumanMessage(content=prompt)

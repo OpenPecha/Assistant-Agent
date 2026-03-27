@@ -12,6 +12,7 @@ class Batch(BaseModel):
     model_name: str = Field(..., description="Model to use")
     user_rules: Optional[str] = Field(None, description="Optional custom translation rules")
     user_prompt: Optional[str] = Field(None, description="User-defined prompt instructions from assistant")
+    instruction: Optional[str] = Field(None, description="Per-request user instruction")
     contexts: Optional[List[str]] = Field(None, description="Additional context for processing")
 
 

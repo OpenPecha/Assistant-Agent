@@ -19,6 +19,7 @@ class WorkflowRequest(BaseModel):
     target_language: Optional[str] = None
     text: List[str]
     model: str
+    instruction: Optional[str] = None
 
 
 class ModelInfo(BaseModel):
@@ -40,6 +41,7 @@ class StreamRequest(BaseModel):
     segments: Optional[SegmentRequest] = None
     model: str = Field(min_length=1)
     offset: int = 0
+    instruction: Optional[str] = None
 
 class WorkflowResult(BaseModel):
     output_text: str
