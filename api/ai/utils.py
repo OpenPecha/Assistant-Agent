@@ -10,10 +10,12 @@ def clean_translation_text(text: str) -> str:
     Returns:
         Cleaned text
     """
-    # Remove extra whitespace
     text = re.sub(r'\s+', ' ', text.strip())
     
-    # Remove common prefixes from model responses
+    if (text.startswith('"') and text.endswith('"')) or \
+       (text.startswith('\u201c') and text.endswith('\u201d')):
+        text = text[1:-1].strip()
+    
     prefixes_to_remove = [
         "Translation:",
         "Translation 1:",

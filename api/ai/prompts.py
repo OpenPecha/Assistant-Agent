@@ -1,6 +1,7 @@
 PROMPT_TEMPLATE = """
 {target_language_line}
 main rules: {user_rules_section}
+Do not wrap the output in quotation marks.
 {user_prompt_section}
 {instruction_section}
 {additional_context_section}
