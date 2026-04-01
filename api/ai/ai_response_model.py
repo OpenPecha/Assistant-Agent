@@ -43,8 +43,16 @@ class StreamRequest(BaseModel):
     offset: int = 0
     instruction: Optional[str] = None
 
+class FuzzyMatch(BaseModel):
+    source_text: str
+    target_text: str
+    score: float
+
+
 class WorkflowResult(BaseModel):
     output_text: str
+    from_memory: bool = False
+    fuzzy_matches: List[FuzzyMatch] = []
 
 
 class ResponseMetadata(BaseModel):
