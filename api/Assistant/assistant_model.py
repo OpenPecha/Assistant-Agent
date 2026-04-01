@@ -26,6 +26,12 @@ class Assistant(Base):
         cascade="all, delete-orphan"
     )
 
+    translation_memories = relationship(
+        "TranslationMemory",
+        back_populates="assistant",
+        cascade="all, delete-orphan"
+    )
+
 class Context(Base):
     __tablename__="context"
 
