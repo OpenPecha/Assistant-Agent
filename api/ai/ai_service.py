@@ -1,4 +1,6 @@
 import asyncio
+import logging
+from datetime import datetime, timezone
 from typing import AsyncGenerator
 
 from api.Assistant.assistant_repository import get_assistant_by_id_repository
@@ -13,13 +15,22 @@ from api.ai.ai_response_model import (
     ResponseMetadata,
     AvailableModelsResponse,
     ModelInfo,
-    EnhanceResponse
+    EnhanceResponse,
+    FuzzyMatch,
 )
 from api.db.pg_database import SessionLocal
 from api.llm.router import get_model_router
 from api.external_api import get_related_segment_ids, get_segment_content
 from api.ai.prompts import ENHANCE_META_PROMPT
+from api.translation_memory.tm_model import TranslationMemory
+from api.translation_memory.tm_repository import (
+    find_exact_match,
+    find_fuzzy_matches,
+    batch_create_tm_entries,
+)
 from fastapi import HTTPException
+
+logger = logging.getLogger(__name__)
 
 
 def build_workflow_request(db_session, assistant_id, target_language, prompt, segments, model, instruction=None) -> WorkflowRequest:
@@ -65,10 +76,59 @@ def validate_model(model: str) -> None:
 
 async def run_workflow_service(assistant_id, target_language, prompt, segments, model, offset=0, instruction=None):
     validate_model(model)
-    
+
+    tm_hits = {}
+    fuzzy_cache = {}
+    texts_for_llm = []
+
+    if target_language:
+        with SessionLocal() as db_session:
+            for idx, source_text in enumerate(prompt):
+                exact = find_exact_match(
+                    db_session, assistant_id, source_text, target_language
+                )
+                if exact:
+                    tm_hits[idx] = exact.target_text
+                    continue
+
+                rows = find_fuzzy_matches(
+                    db_session, assistant_id, source_text, target_language
+                )
+                fuzzy_cache[idx] = [
+                    FuzzyMatch(
+                        source_text=row.source_text,
+                        target_text=row.target_text,
+                        score=round(float(row.score), 4),
+                    )
+                    for row in rows
+                ]
+                texts_for_llm.append((idx, source_text))
+    else:
+        texts_for_llm = list(enumerate(prompt))
+
+    if not texts_for_llm:
+        now = datetime.now(timezone.utc).isoformat()
+        return StreamResponse(
+            results=[
+                WorkflowResult(
+                    output_text=tm_hits[idx], from_memory=True
+                )
+                for idx in range(len(prompt))
+            ],
+            metadata=ResponseMetadata(
+                initialized_at=now,
+                total_batches=0,
+                completed_at=now,
+                total_processing_time=0.0,
+            ),
+            errors=[],
+        )
+
+    llm_prompts = [text for _, text in texts_for_llm]
+
     with SessionLocal() as db_session:
         workflow_request = build_workflow_request(
-            db_session, assistant_id, target_language, prompt, segments, model, instruction
+            db_session, assistant_id, target_language, llm_prompts, segments, model, instruction
         )
     if workflow_request.instance_ids and workflow_request.segments:
         all_segment_ids = []
@@ -97,29 +157,56 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
                 workflow_request.contexts.append(
                     ContextRequest(content=content)
                 )
-    
+
     workflow_response = await run_workflow(workflow_request)
-    
-    results = [
-        WorkflowResult(output_text=result.output_text)
-        for result in workflow_response.get("final_results", [])
-    ]
-    
+    llm_results = workflow_response.get("final_results", [])
+
+    if target_language and llm_results:
+        try:
+            with SessionLocal() as db_session:
+                new_entries = [
+                    TranslationMemory(
+                        assistant_id=assistant_id,
+                        source_text=source_text,
+                        target_text=result.output_text,
+                        target_language=target_language,
+                    )
+                    for (_, source_text), result in zip(texts_for_llm, llm_results)
+                ]
+                batch_create_tm_entries(db_session, new_entries)
+        except Exception as e:
+            logger.warning(f"Failed to save translations to TM: {e}")
+
+    llm_iter = iter(llm_results)
+    merged_results = []
+    for idx in range(len(prompt)):
+        if idx in tm_hits:
+            merged_results.append(
+                WorkflowResult(
+                    output_text=tm_hits[idx], from_memory=True
+                )
+            )
+        else:
+            llm_result = next(llm_iter)
+            merged_results.append(
+                WorkflowResult(
+                    output_text=llm_result.output_text,
+                    from_memory=False,
+                    fuzzy_matches=fuzzy_cache.get(idx, []),
+                )
+            )
+
     workflow_metadata = workflow_response.get("metadata", {})
-    response_metadata = ResponseMetadata(
-        initialized_at=workflow_metadata.get("initialized_at"),
-        total_batches=workflow_metadata.get("total_batches"),
-        completed_at=workflow_metadata.get("completed_at"),
-        total_processing_time=workflow_metadata.get("total_processing_time")
+    return StreamResponse(
+        results=merged_results,
+        metadata=ResponseMetadata(
+            initialized_at=workflow_metadata.get("initialized_at"),
+            total_batches=workflow_metadata.get("total_batches"),
+            completed_at=workflow_metadata.get("completed_at"),
+            total_processing_time=workflow_metadata.get("total_processing_time"),
+        ),
+        errors=workflow_response.get("errors", []),
     )
-    
-    response = StreamResponse(
-        results=results,
-        metadata=response_metadata,
-        errors=workflow_response.get("errors", [])
-    )
-    
-    return response
 
 
 async def stream_workflow_service(
