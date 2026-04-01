@@ -9,7 +9,6 @@ from api.langgraph.workflow_init import run_workflow
 from api.langgraph.workflow_stream import stream_workflow_events
 from api.ai.ai_response_model import (
     WorkflowRequest, 
-    SegmentRequest,
     StreamResponse, 
     WorkflowResult, 
     ResponseMetadata,
@@ -74,9 +73,7 @@ def validate_model(model: str) -> None:
         )
 
 
-async def run_workflow_service(assistant_id, target_language, prompt, segments, model, offset=0, instruction=None):
-    validate_model(model)
-
+def _lookup_translation_memory(assistant_id, prompt, target_language):
     tm_hits = {}
     fuzzy_cache = {}
     texts_for_llm = []
@@ -105,6 +102,53 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
                 texts_for_llm.append((idx, source_text))
     else:
         texts_for_llm = list(enumerate(prompt))
+
+    return tm_hits, fuzzy_cache, texts_for_llm
+
+
+def _save_translations_to_memory(assistant_id, target_language, texts_for_llm, llm_results):
+    try:
+        with SessionLocal() as db_session:
+            new_entries = [
+                TranslationMemory(
+                    assistant_id=assistant_id,
+                    source_text=source_text,
+                    target_text=result.output_text,
+                    target_language=target_language,
+                )
+                for (_, source_text), result in zip(texts_for_llm, llm_results)
+            ]
+            batch_create_tm_entries(db_session, new_entries)
+    except Exception as e:
+        logger.warning(f"Failed to save translations to TM: {e}")
+
+
+def _merge_tm_and_llm_results(prompt, tm_hits, fuzzy_cache, llm_results):
+    llm_iter = iter(llm_results)
+    merged = []
+    for idx in range(len(prompt)):
+        if idx in tm_hits:
+            merged.append(
+                WorkflowResult(output_text=tm_hits[idx], from_memory=True)
+            )
+        else:
+            llm_result = next(llm_iter)
+            merged.append(
+                WorkflowResult(
+                    output_text=llm_result.output_text,
+                    from_memory=False,
+                    fuzzy_matches=fuzzy_cache.get(idx, []),
+                )
+            )
+    return merged
+
+
+async def run_workflow_service(assistant_id, target_language, prompt, segments, model, offset=0, instruction=None):
+    validate_model(model)
+
+    tm_hits, fuzzy_cache, texts_for_llm = _lookup_translation_memory(
+        assistant_id, prompt, target_language
+    )
 
     if not texts_for_llm:
         now = datetime.now(timezone.utc).isoformat()
@@ -162,39 +206,13 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
     llm_results = workflow_response.get("final_results", [])
 
     if target_language and llm_results:
-        try:
-            with SessionLocal() as db_session:
-                new_entries = [
-                    TranslationMemory(
-                        assistant_id=assistant_id,
-                        source_text=source_text,
-                        target_text=result.output_text,
-                        target_language=target_language,
-                    )
-                    for (_, source_text), result in zip(texts_for_llm, llm_results)
-                ]
-                batch_create_tm_entries(db_session, new_entries)
-        except Exception as e:
-            logger.warning(f"Failed to save translations to TM: {e}")
+        _save_translations_to_memory(
+            assistant_id, target_language, texts_for_llm, llm_results
+        )
 
-    llm_iter = iter(llm_results)
-    merged_results = []
-    for idx in range(len(prompt)):
-        if idx in tm_hits:
-            merged_results.append(
-                WorkflowResult(
-                    output_text=tm_hits[idx], from_memory=True
-                )
-            )
-        else:
-            llm_result = next(llm_iter)
-            merged_results.append(
-                WorkflowResult(
-                    output_text=llm_result.output_text,
-                    from_memory=False,
-                    fuzzy_matches=fuzzy_cache.get(idx, []),
-                )
-            )
+    merged_results = _merge_tm_and_llm_results(
+        prompt, tm_hits, fuzzy_cache, llm_results
+    )
 
     workflow_metadata = workflow_response.get("metadata", {})
     return StreamResponse(
