@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from api.translation_memory.tm_model import TranslationMemory
 from uuid import UUID
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from fastapi import HTTPException, status
 import logging
 
@@ -49,22 +49,6 @@ def find_fuzzy_matches(
     ).fetchall()
     return results
 
-
-def create_tm_entry(db: Session, tm: TranslationMemory) -> TranslationMemory:
-    try:
-        db.add(tm)
-        db.commit()
-        db.refresh(tm)
-        return tm
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error creating TM entry: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create translation memory entry",
-        )
-
-
 def batch_create_tm_entries(
     db: Session, entries: List[TranslationMemory]
 ) -> List[TranslationMemory]:
@@ -80,40 +64,4 @@ def batch_create_tm_entries(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to batch create translation memory entries",
-        )
-
-
-def get_tm_entries(
-    db: Session,
-    assistant_id: UUID,
-    target_language: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 20,
-) -> Tuple[List[TranslationMemory], int]:
-    query = db.query(TranslationMemory).filter(
-        TranslationMemory.assistant_id == assistant_id
-    )
-    if target_language:
-        query = query.filter(TranslationMemory.target_language == target_language)
-    total = query.count()
-    entries = query.order_by(TranslationMemory.created_at.desc()).offset(skip).limit(limit).all()
-    return entries, total
-
-
-def delete_tm_entry(db: Session, tm_id: UUID) -> None:
-    entry = db.query(TranslationMemory).filter(TranslationMemory.id == tm_id).first()
-    if not entry:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Translation memory entry not found",
-        )
-    try:
-        db.delete(entry)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error deleting TM entry: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete translation memory entry",
         )
