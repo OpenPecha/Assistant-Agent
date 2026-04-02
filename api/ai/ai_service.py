@@ -73,7 +73,7 @@ def validate_model(model: str) -> None:
         )
 
 
-def _lookup_translation_memory(assistant_id, prompt, target_language):
+def _lookup_translation_memory(assistant_id, prompt, target_language, created_by):
     tm_hits = {}
     fuzzy_cache = {}
     texts_for_llm = []
@@ -82,14 +82,14 @@ def _lookup_translation_memory(assistant_id, prompt, target_language):
         with SessionLocal() as db_session:
             for idx, source_text in enumerate(prompt):
                 exact = find_exact_match(
-                    db_session, assistant_id, source_text, target_language
+                    db_session, assistant_id, source_text, target_language, created_by
                 )
                 if exact:
                     tm_hits[idx] = exact.target_text
                     continue
 
                 rows = find_fuzzy_matches(
-                    db_session, assistant_id, source_text, target_language
+                    db_session, assistant_id, source_text, target_language, created_by
                 )
                 fuzzy_cache[idx] = [
                     FuzzyMatch(
@@ -106,7 +106,7 @@ def _lookup_translation_memory(assistant_id, prompt, target_language):
     return tm_hits, fuzzy_cache, texts_for_llm
 
 
-def _save_translations_to_memory(assistant_id, target_language, texts_for_llm, llm_results):
+def _save_translations_to_memory(assistant_id, target_language, texts_for_llm, llm_results, created_by, model_name):
     try:
         with SessionLocal() as db_session:
             new_entries = [
@@ -115,6 +115,8 @@ def _save_translations_to_memory(assistant_id, target_language, texts_for_llm, l
                     source_text=source_text,
                     target_text=result.output_text,
                     target_language=target_language,
+                    model_name=model_name,
+                    created_by=created_by,
                 )
                 for (_, source_text), result in zip(texts_for_llm, llm_results)
             ]
@@ -143,11 +145,11 @@ def _merge_tm_and_llm_results(prompt, tm_hits, fuzzy_cache, llm_results):
     return merged
 
 
-async def run_workflow_service(assistant_id, target_language, prompt, segments, model, offset=0, instruction=None):
+async def run_workflow_service(assistant_id, target_language, prompt, segments, model, offset=0, instruction=None, created_by=None):
     validate_model(model)
 
     tm_hits, fuzzy_cache, texts_for_llm = _lookup_translation_memory(
-        assistant_id, prompt, target_language
+        assistant_id, prompt, target_language, created_by
     )
 
     if not texts_for_llm:
@@ -207,7 +209,7 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
 
     if target_language and llm_results:
         _save_translations_to_memory(
-            assistant_id, target_language, texts_for_llm, llm_results
+            assistant_id, target_language, texts_for_llm, llm_results, created_by, model
         )
 
     merged_results = _merge_tm_and_llm_results(

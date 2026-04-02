@@ -30,6 +30,7 @@ target_metadata = Base.metadata
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 from api.Assistant.assistant_model import Assistant, Context
+from api.translation_memory.tm_model import TranslationMemory
 
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.

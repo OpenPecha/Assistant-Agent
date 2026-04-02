@@ -12,6 +12,8 @@ class TranslationMemory(Base):
     source_text=Column(Text,nullable=False)
     target_text=Column(Text,nullable=False)
     target_language=Column(String(255),nullable=False)
+    model_name=Column(String(255),nullable=True)
+    created_by=Column(String(255),nullable=False)
     created_at=Column(DateTime(timezone=True),default=datetime.now(timezone.utc),nullable=False)
 
     assistant=relationship("Assistant",back_populates="translation_memories")

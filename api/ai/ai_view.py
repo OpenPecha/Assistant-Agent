@@ -1,5 +1,6 @@
 from api.ai.ai_response_model import StreamRequest, AvailableModelsResponse, EnhanceRequest, EnhanceResponse
 from api.ai.ai_service import run_workflow_service, stream_workflow_service, get_available_models_service, enhance_prompt_service
+from api.Users.user_service import validate_and_extract_user_email
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from starlette import status
@@ -33,6 +34,8 @@ async def run_workflow(
         HTTPAuthorizationCredentials, Depends(oauth2_scheme)
     ],
 ):
+    current_user_email = validate_and_extract_user_email(token=authentication_credential.credentials)
+
     max_query_length = get("MAX_QUERY_LENGTH")
     total_prompt_length = sum(len(p) for p in payload.prompt)
     if total_prompt_length > int(max_query_length):
@@ -52,6 +55,7 @@ async def run_workflow(
         model=payload.model,
         offset=payload.offset,
         instruction=payload.instruction,
+        created_by=current_user_email,
     )
 
 
@@ -62,6 +66,8 @@ async def stream_workflow(
         HTTPAuthorizationCredentials, Depends(oauth2_scheme)
     ],
 ):
+    validate_and_extract_user_email(token=authentication_credential.credentials)
+
     max_query_length = get("MAX_QUERY_LENGTH")
     total_prompt_length = sum(len(p) for p in payload.prompt)
     if total_prompt_length > int(max_query_length):
@@ -92,6 +98,8 @@ async def enhance_prompt(
         HTTPAuthorizationCredentials, Depends(oauth2_scheme)
     ],
 ):
+    validate_and_extract_user_email(token=authentication_credential.credentials)
+
     return await enhance_prompt_service(
         prompt=payload.prompt,
         model=payload.model,

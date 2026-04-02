@@ -10,12 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 def find_exact_match(
-    db: Session, assistant_id: UUID, source_text: str, target_language: str
+    db: Session, assistant_id: UUID, source_text: str, target_language: str, created_by: str
 ) -> Optional[TranslationMemory]:
     return db.query(TranslationMemory).filter(
         TranslationMemory.assistant_id == assistant_id,
         TranslationMemory.source_text == source_text,
         TranslationMemory.target_language == target_language,
+        TranslationMemory.created_by == created_by,
     ).first()
 
 
@@ -24,6 +25,7 @@ def find_fuzzy_matches(
     assistant_id: UUID,
     source_text: str,
     target_language: str,
+    created_by: str,
     limit: int = 5,
     threshold: float = 0.3,
 ) -> list:
@@ -34,6 +36,7 @@ def find_fuzzy_matches(
             FROM translation_memory
             WHERE assistant_id = :assistant_id
               AND target_language = :target_language
+              AND created_by = :created_by
               AND similarity(source_text, :source_text) > :threshold
               AND source_text != :source_text
             ORDER BY score DESC
@@ -43,6 +46,7 @@ def find_fuzzy_matches(
             "assistant_id": str(assistant_id),
             "source_text": source_text,
             "target_language": target_language,
+            "created_by": created_by,
             "threshold": threshold,
             "limit": limit,
         },
