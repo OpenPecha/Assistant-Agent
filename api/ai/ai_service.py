@@ -73,7 +73,7 @@ def validate_model(model: str) -> None:
         )
 
 
-def _lookup_translation_memory(assistant_id, prompt, target_language, created_by):
+def _lookup_translation_memory(assistant_id, prompt, target_language, created_by, model_name):
     tm_hits = {}
     fuzzy_cache = {}
     texts_for_llm = []
@@ -82,20 +82,21 @@ def _lookup_translation_memory(assistant_id, prompt, target_language, created_by
         with SessionLocal() as db_session:
             for idx, source_text in enumerate(prompt):
                 exact = find_exact_match(
-                    db_session, assistant_id, source_text, target_language, created_by
+                    db_session, assistant_id, source_text, target_language, created_by, model_name
                 )
                 if exact:
                     tm_hits[idx] = exact.target_text
                     continue
 
                 rows = find_fuzzy_matches(
-                    db_session, assistant_id, source_text, target_language, created_by
+                    db_session, assistant_id, source_text, target_language, created_by, model_name
                 )
                 fuzzy_cache[idx] = [
                     FuzzyMatch(
                         source_text=row.source_text,
                         target_text=row.target_text,
                         score=round(float(row.score), 4),
+                        model_name=row.model_name,
                     )
                     for row in rows
                 ]
@@ -149,7 +150,7 @@ async def run_workflow_service(assistant_id, target_language, prompt, segments, 
     validate_model(model)
 
     tm_hits, fuzzy_cache, texts_for_llm = _lookup_translation_memory(
-        assistant_id, prompt, target_language, created_by
+        assistant_id, prompt, target_language, created_by, model
     )
 
     if not texts_for_llm:

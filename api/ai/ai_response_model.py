@@ -47,6 +47,7 @@ class FuzzyMatch(BaseModel):
     source_text: str
     target_text: str
     score: float
+    model_name: Optional[str] = None
 
 
 class WorkflowResult(BaseModel):
