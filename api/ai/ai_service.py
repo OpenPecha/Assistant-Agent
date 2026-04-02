@@ -89,7 +89,7 @@ def _lookup_translation_memory(assistant_id, prompt, target_language, created_by
                     continue
 
                 rows = find_fuzzy_matches(
-                    db_session, assistant_id, source_text, target_language, created_by, model_name
+                    db_session, assistant_id, source_text, target_language, created_by
                 )
                 fuzzy_cache[idx] = [
                     FuzzyMatch(

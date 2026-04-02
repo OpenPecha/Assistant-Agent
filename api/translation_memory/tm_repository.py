@@ -27,7 +27,6 @@ def find_fuzzy_matches(
     source_text: str,
     target_language: str,
     created_by: str,
-    model_name: str,
     limit: int = 5,
     threshold: float = 0.3,
 ) -> list:
@@ -39,7 +38,6 @@ def find_fuzzy_matches(
             WHERE assistant_id = :assistant_id
               AND target_language = :target_language
               AND created_by = :created_by
-              AND model_name = :model_name
               AND similarity(source_text, :source_text) > :threshold
               AND source_text != :source_text
             ORDER BY score DESC
@@ -50,7 +48,6 @@ def find_fuzzy_matches(
             "source_text": source_text,
             "target_language": target_language,
             "created_by": created_by,
-            "model_name": model_name,
             "threshold": threshold,
             "limit": limit,
         },
