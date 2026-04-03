@@ -4,7 +4,7 @@ from api.Assistant.assistant_repository import get_all_assistants, get_assistant
 from api.Assistant.assistant_response_model import AssistantRequest, AssistantResponse, AssistantInfoResponse, AssistantListItemResponse, ContextResponse, UpdateAssistantRequest
 from api.search.search_service import get_search_texts_details
 from api.Assistant.assistant_repository import create_assistant_repository
-from typing import List
+from typing import List, Tuple
 from api.Assistant.assistant_model import Assistant, Context
 from uuid import UUID
 from datetime import datetime, timezone
@@ -220,3 +220,27 @@ async def update_assistant_service(assistant_id: UUID, update_request: UpdateAss
     )
 
     return assistant_info
+
+
+def _build_skill_markdown(name: str, description: str, body: str) -> str:
+    frontmatter_lines = [
+        "---",
+        f"name: {name}",
+        f"description: {description or ''}",
+        "---",
+    ]
+    return "\n".join(frontmatter_lines) + "\n\n" + body.strip() + "\n"
+
+
+def export_assistant_as_md_service(assistant_id: UUID) -> Tuple[str, str]:
+    with SessionLocal() as db_session:
+        assistant = get_assistant_by_id_repository(db=db_session, assistant_id=assistant_id)
+        md_content = _build_skill_markdown(
+            name=assistant.name,
+            description=assistant.description,
+            body=assistant.system_prompt,
+        )
+        safe_filename = re.sub(r"[^\w\-]", "_", assistant.name.strip().lower())
+        filename = f"{safe_filename}.md"
+    return md_content, filename
+
