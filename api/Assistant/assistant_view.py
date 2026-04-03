@@ -1,8 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, Form
+from fastapi.responses import Response
 from starlette import status
 from api.Assistant.assistant_response_model import AssistantResponse, AssistantRequest, AssistantInfoResponse, UpdateAssistantRequest
 from fastapi import Query, Depends
-from api.Assistant.assistant_service import create_assistant_service, get_assistant_by_id_service, get_assistants, delete_assistant_service, update_assistant_service
+from api.Assistant.assistant_service import create_assistant_service, get_assistant_by_id_service, get_assistants, delete_assistant_service, update_assistant_service, export_assistant_as_md_service
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated, Optional, List
 from uuid import UUID
@@ -80,4 +81,16 @@ async def update_assistant(
         assistant_id=assistant_id,
         update_request=update_request,
         token=authentication_credential.credentials
+    )
+
+@assistant_router.get("/{assistant_id}/export", status_code=status.HTTP_200_OK)
+async def export_assistant(
+    assistant_id: UUID,
+    authentication_credential: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]
+):
+    md_content, filename = export_assistant_as_md_service(assistant_id=assistant_id)
+    return Response(
+        content=md_content,
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
