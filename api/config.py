@@ -27,6 +27,7 @@ DEFAULT = dict(
     CACHE_PREFIX="agent_microservice:",
     CACHE_ASSISTANT_TIMEOUT=3600,
     EXTERNAL_PECHA_API_URL="your-external-pecha-api-url",
+    API_KEY_HEADER="your-api-key-header",
 )
 
 def get(key: str) -> str:
