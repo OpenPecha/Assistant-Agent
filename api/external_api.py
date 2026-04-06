@@ -7,12 +7,12 @@ client = httpx.AsyncClient(timeout=httpx.Timeout(30.0))
 
 ACCEPT_JSON_HEADER = {"Accept": "application/json"}
 EXTERNAL_PECHA_API_URL = get("EXTERNAL_PECHA_API_URL")
-
+API_KEY_HEADER = get("API_KEY_HEADER")
 
 async def call_external_pecha_api_instances(text_id: str) -> list[dict]:
-    endpoint = f"{EXTERNAL_PECHA_API_URL}/texts/{text_id}/instances?instance_type={Constant.INSTANCE_TYPE}"
+    endpoint = f"{EXTERNAL_PECHA_API_URL}/texts/{text_id}/editions?edition_type={Constant.INSTANCE_TYPE}"
     try:
-        response = await client.get(endpoint, headers=ACCEPT_JSON_HEADER)
+        response = await client.get(endpoint, headers={**ACCEPT_JSON_HEADER, **API_KEY_HEADER})
         response.raise_for_status()
         data = response.json()
         return data if isinstance(data, list) else []
@@ -25,7 +25,7 @@ async def call_external_pecha_api_instances(text_id: str) -> list[dict]:
 async def call_external_pecha_api_instances_content(instance_id: str) -> str:
     endpoint = f"{EXTERNAL_PECHA_API_URL}/instances/{instance_id}?annotation=false&content=true"
     try:
-        response = await client.get(endpoint, headers=ACCEPT_JSON_HEADER)
+        response = await client.get(endpoint, headers={**ACCEPT_JSON_HEADER, **API_KEY_HEADER})
         response.raise_for_status()
         data = response.json()
         return data.get("content", "")
@@ -37,7 +37,7 @@ async def call_external_pecha_api_instances_content(instance_id: str) -> str:
 async def get_segment_content(segment_id:str) -> str:
     endpoint = f"{EXTERNAL_PECHA_API_URL}/segments/{segment_id}/content"
     try:
-        response = await client.get(endpoint, headers=ACCEPT_JSON_HEADER)
+        response = await client.get(endpoint, headers={**ACCEPT_JSON_HEADER, **API_KEY_HEADER})
         response.raise_for_status()
         data = response.json()
         return data.get("content", "")
@@ -49,9 +49,9 @@ async def get_segment_content(segment_id:str) -> str:
 async def get_related_segment_ids(
     instance_id: str, span_start: int, span_end: int
 ) -> list[str]:
-    endpoint = f"{EXTERNAL_PECHA_API_URL}/instances/{instance_id}/segment-related?span_start={span_start}&span_end={span_end}&transform=false"
+    endpoint = f"{EXTERNAL_PECHA_API_URL}/editions/{instance_id}/segments/related?span_start={span_start}&span_end={span_end}"
     try:
-        response = await client.get(endpoint, headers=ACCEPT_JSON_HEADER, timeout=60.0)
+        response = await client.get(endpoint, headers={**ACCEPT_JSON_HEADER, **API_KEY_HEADER}, timeout=60.0)
         response.raise_for_status()
         data = response.json()
         segment_ids = []
